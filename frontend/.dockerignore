@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.github
+__tests__
+e2e
+.env*
+!.env.example
+*.md
+release
+dist
+out
+.DS_Store

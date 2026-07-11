@@ -1,0 +1,45 @@
+appId: com.atlas-oracle.app
+productName: Atlas Oracle
+copyright: Copyright © 2026 Atlas Oracle
+
+directories:
+  output: release
+  buildResources: frontend/assets
+
+files:
+  - electron/**/*
+  - frontend/assets/**/*
+  - frontend/.next/standalone/**/*
+  - frontend/.next/static/**/*
+  - frontend/public/**/*
+  - package.json
+
+extraResources:
+  - from: frontend/.next/standalone
+    to: app/next-standalone
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: msix
+      arch:
+        - x64
+  icon: frontend/assets/icons/icon.png
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: Atlas Oracle
+
+msix:
+  identityName: com.atlas-oracle.app
+  publisherDisplayName: Atlas Oracle
+  publisher: CN=Atlas Oracle, O=Atlas Oracle, L=Unknown, S=Unknown, C=US
+
+publish: null
