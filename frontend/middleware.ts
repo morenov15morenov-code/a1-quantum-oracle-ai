@@ -21,8 +21,9 @@ export async function middleware(request: NextRequest) {
   const isApiRoute = pathname.startsWith("/api");
   const isAdminApiRoute = pathname.startsWith("/api/admin");
   const isPublic = pathname === "/" || pathname.startsWith("/api/health");
+  const isAuthApi = pathname.startsWith("/api/auth/");
 
-  if (isPublic) {
+  if (isPublic || isAuthApi) {
     return NextResponse.next();
   }
 
