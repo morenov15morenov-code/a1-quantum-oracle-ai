@@ -8,33 +8,33 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [totalUsers, totalPredictions, activeUsers, predictionsByDay, usersByDay, topModels, predictionsByUser] =
-    await Promise.all([
+    const [totalUsers, totalPredictions, activeUsers, avgResult] = await Promise.all([
       prisma.user.count(),
       prisma.prediction.count(),
       prisma.user.count({ where: { active: true } }),
+      prisma.prediction.aggregate({ _avg: { confidence: true } }),
+    ]);
 
-      prisma.prediction.groupBy({
-        by: ["createdAt"],
+    const avgConfidence = avgResult._avg.confidence ?? 0;
+
+    const [recentPredictions, recentUsers, topModels, predictionsByUser] = await Promise.all([
+      prisma.prediction.findMany({
         where: { createdAt: { gte: thirtyDaysAgo } },
-        _count: true,
+        select: { createdAt: true },
       }),
-
-      prisma.user.groupBy({
-        by: ["createdAt"],
+      prisma.user.findMany({
         where: { createdAt: { gte: thirtyDaysAgo } },
-        _count: true,
+        select: { createdAt: true },
       }),
-
       prisma.prediction.groupBy({
         by: ["model"],
         _count: true,
         orderBy: { _count: { model: "desc" } },
         take: 5,
       }),
-
       prisma.prediction.groupBy({
         by: ["userId"],
         _count: true,
@@ -43,32 +43,40 @@ export async function GET() {
       }),
     ]);
 
-  const avgResult = await prisma.prediction.aggregate({ _avg: { confidence: true } });
+    const predictionsByDayMap = new Map<string, number>();
+    for (const p of recentPredictions) {
+      const date = p.createdAt.toISOString().split("T")[0];
+      predictionsByDayMap.set(date, (predictionsByDayMap.get(date) ?? 0) + 1);
+    }
 
-  const users = await prisma.user.findMany({
-    where: { id: { in: predictionsByUser.map((p: { userId: string }) => p.userId) } },
-    select: { id: true, name: true },
-  });
-  const userMap = new Map(users.map((u: { id: string; name: string }) => [u.id, u.name]));
+    const usersByDayMap = new Map<string, number>();
+    for (const u of recentUsers) {
+      const date = u.createdAt.toISOString().split("T")[0];
+      usersByDayMap.set(date, (usersByDayMap.get(date) ?? 0) + 1);
+    }
 
-  return NextResponse.json({
-    totalUsers,
-    totalPredictions,
-    activeUsers,
-    avgConfidence: avgResult._avg.confidence ?? 0,
-    predictionsByDay: predictionsByDay.map((p: { createdAt: Date; _count: number }) => ({
-      date: p.createdAt.toISOString().split("T")[0],
-      count: p._count,
-    })),
-    usersByDay: usersByDay.map((u: { createdAt: Date; _count: number }) => ({
-      date: u.createdAt.toISOString().split("T")[0],
-      count: u._count,
-    })),
-    topModels: topModels.map((m: { model: string; _count: number }) => ({ model: m.model, count: m._count })),
-    predictionsByUser: predictionsByUser.map((p: { userId: string; _count: number }) => ({
-      userId: p.userId,
-      userName: userMap.get(p.userId) ?? "Unknown",
-      count: p._count,
-    })),
-  });
+    const users = await prisma.user.findMany({
+      where: { id: { in: predictionsByUser.map((p: { userId: string }) => p.userId) } },
+      select: { id: true, name: true },
+    });
+    const userMap = new Map(users.map((u: { id: string; name: string }) => [u.id, u.name]));
+
+    return NextResponse.json({
+      totalUsers,
+      totalPredictions,
+      activeUsers,
+      avgConfidence,
+      predictionsByDay: Array.from(predictionsByDayMap.entries()).map(([date, count]) => ({ date, count })),
+      usersByDay: Array.from(usersByDayMap.entries()).map(([date, count]) => ({ date, count })),
+      topModels: topModels.map((m: { model: string; _count: number }) => ({ model: m.model, count: m._count })),
+      predictionsByUser: predictionsByUser.map((p: { userId: string; _count: number }) => ({
+        userId: p.userId,
+        userName: userMap.get(p.userId) ?? "Unknown",
+        count: p._count,
+      })),
+    });
+  } catch (error) {
+    console.error("Admin analytics error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

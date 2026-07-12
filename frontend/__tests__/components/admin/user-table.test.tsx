@@ -12,6 +12,12 @@ vi.mock("@/lib/use-fetch", () => ({
   useFetch: (...args: unknown[]) => mockUseFetch(...args),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}));
+
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 

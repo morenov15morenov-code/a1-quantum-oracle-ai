@@ -66,11 +66,10 @@ describe("Sidebar", () => {
     expect(screen.getByText("Sign Out")).toBeDefined();
   });
 
-  it("renders icons for each item", () => {
+  it("renders SVG icons for each nav item", () => {
     render(<Sidebar />);
-    expect(screen.getByText("📊")).toBeDefined();
-    expect(screen.getByText("👥")).toBeDefined();
-    expect(screen.getByText("🔮")).toBeDefined();
-    expect(screen.getByText("⚙️")).toBeDefined();
+    const navLinks = screen.getByRole("navigation", { name: "Admin navigation" });
+    const svgs = navLinks.querySelectorAll("svg");
+    expect(svgs.length).toBe(4);
   });
 });

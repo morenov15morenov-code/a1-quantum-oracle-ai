@@ -50,14 +50,15 @@ export default function AdminPredictionsPage() {
             <p className="text-sm text-muted-foreground">No predictions yet.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" aria-label="All platform predictions">
+                <caption className="sr-only">List of all predictions across the platform</caption>
                 <thead>
                   <tr className="border-b text-left">
-                    <th className="pb-3 font-medium text-muted-foreground">User</th>
-                    <th className="pb-3 font-medium text-muted-foreground">Input</th>
-                    <th className="pb-3 font-medium text-muted-foreground">Confidence</th>
-                    <th className="pb-3 font-medium text-muted-foreground">Model</th>
-                    <th className="pb-3 font-medium text-muted-foreground">Date</th>
+                    <th scope="col" className="pb-3 font-medium text-muted-foreground">User</th>
+                    <th scope="col" className="pb-3 font-medium text-muted-foreground">Input</th>
+                    <th scope="col" className="pb-3 font-medium text-muted-foreground">Confidence</th>
+                    <th scope="col" className="pb-3 font-medium text-muted-foreground">Model</th>
+                    <th scope="col" className="pb-3 font-medium text-muted-foreground">Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -84,16 +85,18 @@ export default function AdminPredictionsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
+                aria-label="Go to previous page"
                 className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent disabled:opacity-50"
               >
                 Previous
               </button>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground" aria-current="page">
                 Page {page} of {data.totalPages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
                 disabled={page === data.totalPages}
+                aria-label="Go to next page"
                 className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent disabled:opacity-50"
               >
                 Next

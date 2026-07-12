@@ -8,12 +8,17 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
-  });
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
+    });
 
-  return NextResponse.json({ users });
+    return NextResponse.json({ users });
+  } catch (error) {
+    console.error("Admin users GET error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function PATCH(request: Request) {
@@ -25,8 +30,12 @@ export async function PATCH(request: Request) {
   try {
     const { userId, active } = await request.json();
 
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    if (!userId || typeof active !== "boolean") {
+      return NextResponse.json({ error: "userId and active (boolean) are required" }, { status: 400 });
+    }
+
+    if (userId === session.user.id && active === false) {
+      return NextResponse.json({ error: "Admin cannot deactivate their own account" }, { status: 400 });
     }
 
     const user = await prisma.user.update({

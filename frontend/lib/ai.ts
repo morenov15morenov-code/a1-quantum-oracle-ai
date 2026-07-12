@@ -2,6 +2,8 @@ interface PredictionResult {
   result: string;
   confidence: number;
   reasoning: string;
+  tokensIn?: number;
+  tokensOut?: number;
 }
 
 function generateMockPrediction(input: string): PredictionResult {
@@ -69,6 +71,8 @@ export async function generatePrediction(input: string): Promise<PredictionResul
       result: parsed.result || "No prediction generated.",
       confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
       reasoning: parsed.reasoning || "No reasoning provided.",
+      tokensIn: completion.usage?.prompt_tokens,
+      tokensOut: completion.usage?.completion_tokens,
     };
   } catch (error) {
     console.error("AI prediction error:", error);

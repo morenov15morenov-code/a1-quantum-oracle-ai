@@ -9,7 +9,7 @@ export interface PredictionResult {
   model: string;
   tokensIn: number | null;
   tokensOut: number | null;
-  createdAt: Date;
+  createdAt: Date | string;
 }
 
 export interface UserProfile {
@@ -30,4 +30,15 @@ export interface AnalyticsData {
   usersByDay: { date: string; count: number }[];
   topModels: { model: string; count: number }[];
   predictionsByUser: { userId: string; userName: string; count: number }[];
+}
+
+export interface PaginatedResponse<T> {
+  predictions: T[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface ApiError {
+  error: string;
 }

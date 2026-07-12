@@ -1,6 +1,25 @@
-const rateMap = new Map<string, { count: number; resetAt: number }>();
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
+
+const rateMap = new Map<string, RateLimitEntry>();
+
+const CLEANUP_INTERVAL_MS = 60_000;
+let lastCleanup = Date.now();
+
+function cleanup() {
+  const now = Date.now();
+  if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
+  lastCleanup = now;
+  for (const [key, entry] of rateMap) {
+    if (now > entry.resetAt) rateMap.delete(key);
+  }
+}
 
 export function rateLimit(key: string, limit = 20, windowMs = 60000) {
+  cleanup();
+
   const now = Date.now();
   const entry = rateMap.get(key);
 

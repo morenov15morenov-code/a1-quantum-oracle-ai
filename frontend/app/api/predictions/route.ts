@@ -3,7 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { generatePrediction } from "@/lib/ai";
 import { predictionSchema } from "@/lib/validations";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
+import { parsePagination, paginationError } from "@/lib/pagination";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
   const rl = rateLimit(`predict:${session.user.id}:${ip}`, 10, 60000);
   if (!rl.success) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   try {
@@ -36,6 +37,8 @@ export async function POST(request: Request) {
         confidence: aiResult.confidence,
         reasoning: aiResult.reasoning,
         model: process.env.OPENAI_API_KEY ? "gpt-4o" : "mock",
+        tokensIn: aiResult.tokensIn ?? null,
+        tokensOut: aiResult.tokensOut ?? null,
       },
     });
 
@@ -47,7 +50,10 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(prediction, { status: 201 });
+    return NextResponse.json(prediction, {
+      status: 201,
+      headers: getRateLimitHeaders(10, rl.remaining),
+    });
   } catch (error) {
     console.error("Prediction error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -61,19 +67,26 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const limit = parseInt(searchParams.get("limit") ?? "20");
-  const skip = (page - 1) * limit;
+  const pagination = parsePagination(searchParams);
+  if (!pagination) {
+    return NextResponse.json(paginationError(), { status: 400 });
+  }
 
-  const [predictions, total] = await Promise.all([
-    prisma.prediction.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
-      skip,
-      take: limit,
-    }),
-    prisma.prediction.count({ where: { userId: session.user.id } }),
-  ]);
+  try {
+    const { page, limit, skip } = pagination;
+    const [predictions, total] = await Promise.all([
+      prisma.prediction.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.prediction.count({ where: { userId: session.user.id } }),
+    ]);
 
-  return NextResponse.json({ predictions, total, page, totalPages: Math.ceil(total / limit) });
+    return NextResponse.json({ predictions, total, page, totalPages: Math.ceil(total / limit) });
+  } catch (error) {
+    console.error("Predictions GET error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

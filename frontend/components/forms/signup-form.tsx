@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,9 +60,11 @@ export function SignupForm() {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(signupAction, {});
 
-  if (state?.success) {
-    router.push("/dashboard");
-  }
+  useEffect(() => {
+    if (state?.success) {
+      router.push("/dashboard");
+    }
+  }, [state?.success, router]);
 
   return (
     <Card className="w-full max-w-md">
@@ -72,7 +75,7 @@ export function SignupForm() {
       <CardContent>
         <form action={formAction} className="space-y-4">
           {state?.error && (
-            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" role="alert" aria-live="polite">
               {state.error}
             </div>
           )}
@@ -103,9 +106,9 @@ export function SignupForm() {
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <a href="/login" className="text-primary underline-offset-4 hover:underline">
+            <Link href="/login" className="text-primary underline-offset-4 hover:underline">
               Sign in
-            </a>
+            </Link>
           </p>
         </form>
       </CardContent>

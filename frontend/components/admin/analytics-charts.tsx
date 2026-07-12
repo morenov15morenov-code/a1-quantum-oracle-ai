@@ -27,6 +27,9 @@ export function AnalyticsCharts() {
 
   if (!data) return <p className="text-muted-foreground">Failed to load analytics</p>;
 
+  const predictionsMaxCount = Math.max(...data.predictionsByDay.map((d) => d.count), 1);
+  const usersMaxCount = Math.max(...data.usersByDay.map((d) => d.count), 1);
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -70,20 +73,17 @@ export function AnalyticsCharts() {
             <CardTitle className="text-lg">Predictions (Last 30 Days)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px]">
+            <div className="h-[200px]" role="img" aria-label="Bar chart showing predictions over the last 30 days">
               {data.predictionsByDay.length > 0 ? (
                 <div className="flex h-full items-end gap-1">
-                  {data.predictionsByDay.map((day) => {
-                    const maxCount = Math.max(...data.predictionsByDay.map((d) => d.count), 1);
-                    return (
-                      <div
-                        key={day.date}
-                        className="flex-1 rounded-t bg-primary/80 transition-all hover:bg-primary"
-                        style={{ height: `${(day.count / maxCount) * 100}%` }}
-                        title={`${day.date}: ${day.count} predictions`}
-                      />
-                    );
-                  })}
+                  {data.predictionsByDay.map((day) => (
+                    <div
+                      key={day.date}
+                      className="flex-1 rounded-t bg-primary/80 transition-all hover:bg-primary"
+                      style={{ height: `${(day.count / predictionsMaxCount) * 100}%` }}
+                      title={`${day.date}: ${day.count} predictions`}
+                    />
+                  ))}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No data yet</p>
@@ -97,20 +97,17 @@ export function AnalyticsCharts() {
             <CardTitle className="text-lg">New Users (Last 30 Days)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px]">
+            <div className="h-[200px]" role="img" aria-label="Bar chart showing new users over the last 30 days">
               {data.usersByDay.length > 0 ? (
                 <div className="flex h-full items-end gap-1">
-                  {data.usersByDay.map((day) => {
-                    const maxCount = Math.max(...data.usersByDay.map((d) => d.count), 1);
-                    return (
-                      <div
-                        key={day.date}
-                        className="flex-1 rounded-t bg-green-500/80 transition-all hover:bg-green-500"
-                        style={{ height: `${(day.count / maxCount) * 100}%` }}
-                        title={`${day.date}: ${day.count} new users`}
-                      />
-                    );
-                  })}
+                  {data.usersByDay.map((day) => (
+                    <div
+                      key={day.date}
+                      className="flex-1 rounded-t bg-green-500/80 transition-all hover:bg-green-500"
+                      style={{ height: `${(day.count / usersMaxCount) * 100}%` }}
+                      title={`${day.date}: ${day.count} new users`}
+                    />
+                  ))}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No data yet</p>

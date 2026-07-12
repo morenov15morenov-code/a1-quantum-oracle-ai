@@ -31,6 +31,28 @@ win:
   icon: frontend/assets/icons/icon.png
   artifactName: ${productName}-Setup-${version}.${ext}
 
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: frontend/assets/icons/icon.png
+  artifactName: ${productName}-${version}.${ext}
+  category: public.app-category.utilities
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  icon: frontend/assets/icons/icon.png
+  artifactName: ${productName}-${version}.${ext}
+  category: Utility
+
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

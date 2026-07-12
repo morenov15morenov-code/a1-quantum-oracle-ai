@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import type { UserProfile } from "@/types";
+import { useRouter } from "next/navigation";
 
 export function UserTable() {
   const { data, loading } = useFetch<{ users: UserProfile[] }>("/api/admin/users");
+  const router = useRouter();
 
   async function toggleUserStatus(userId: string, currentStatus: boolean) {
     try {
@@ -17,7 +19,7 @@ export function UserTable() {
         body: JSON.stringify({ userId, active: !currentStatus }),
       });
       if (res.ok) {
-        window.location.reload();
+        router.refresh();
       }
     } catch {
       console.error("Failed to update user");
@@ -50,15 +52,16 @@ export function UserTable() {
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-label="Users management table">
+            <caption className="sr-only">List of all platform users</caption>
             <thead>
               <tr className="border-b text-left">
-                <th className="pb-3 font-medium text-muted-foreground">Name</th>
-                <th className="pb-3 font-medium text-muted-foreground">Email</th>
-                <th className="pb-3 font-medium text-muted-foreground">Role</th>
-                <th className="pb-3 font-medium text-muted-foreground">Status</th>
-                <th className="pb-3 font-medium text-muted-foreground">Joined</th>
-                <th className="pb-3 font-medium text-muted-foreground">Actions</th>
+                <th scope="col" className="pb-3 font-medium text-muted-foreground">Name</th>
+                <th scope="col" className="pb-3 font-medium text-muted-foreground">Email</th>
+                <th scope="col" className="pb-3 font-medium text-muted-foreground">Role</th>
+                <th scope="col" className="pb-3 font-medium text-muted-foreground">Status</th>
+                <th scope="col" className="pb-3 font-medium text-muted-foreground">Joined</th>
+                <th scope="col" className="pb-3 font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -74,7 +77,7 @@ export function UserTable() {
                     </span>
                   </td>
                   <td className="py-3">
-                    <span className={`inline-block h-2 w-2 rounded-full ${user.active ? "bg-green-500" : "bg-red-500"}`} />
+                    <span className={`inline-block h-2 w-2 rounded-full ${user.active ? "bg-green-500" : "bg-red-500"}`} aria-hidden="true" />
                     <span className="ml-1.5 text-xs">{user.active ? "Active" : "Inactive"}</span>
                   </td>
                   <td className="py-3 text-muted-foreground">{formatDate(user.createdAt)}</td>
@@ -82,6 +85,7 @@ export function UserTable() {
                     <Button
                       variant="outline"
                       size="sm"
+                      aria-label={`${user.active ? "Deactivate" : "Activate"} ${user.name}`}
                       onClick={() => toggleUserStatus(user.id, user.active)}
                     >
                       {user.active ? "Deactivate" : "Activate"}

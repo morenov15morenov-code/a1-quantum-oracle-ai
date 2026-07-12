@@ -9,9 +9,6 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -21,29 +18,29 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - run: npm ci
+      - name: Install dependencies
+        run: cd frontend && npm ci
 
-      - run: npx prisma generate
+      - name: Lint
+        run: cd frontend && npm run lint
 
-      - run: npm run lint
+      - name: Type check
+        run: cd frontend && npm run typecheck
 
-      - run: npm run typecheck
-
-      - run: npm run build
+      - name: Build
+        run: cd frontend && npm run build
         env:
           DATABASE_URL: "file:./prisma/dev.db"
           AUTH_SECRET: "ci-test-secret-not-for-production"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
 
-      - run: npm test
+      - name: Test
+        run: cd frontend && npm run test
 
   electron-build:
-    if: github.ref == 'refs/heads/main'
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs: check
-    defaults:
-      run:
-        working-directory: frontend
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
@@ -53,24 +50,25 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - run: npm ci
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
 
-      - run: npx prisma generate
+      - name: Install root dependencies
+        run: npm ci
 
-      - run: npm run build
+      - name: Build frontend
+        run: cd frontend && npm run build
         env:
           DATABASE_URL: "file:./prisma/dev.db"
-          AUTH_SECRET: "ci-test-secret-not-for-production"
+          AUTH_SECRET: "ci-test-secret"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
 
-      - name: Install Electron dependencies
-        run: npm install -g electron-builder
+      - name: Build Electron (Linux)
+        run: npx electron-builder --linux --config electron-builder.yml
 
-      - name: Build Electron package
-        run: npm run electron:build
-        working-directory: .
-
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: atlas-oracle-windows
-          path: release/*.exe
+          name: atlas-oracle-linux
+          path: release/*.AppImage
+          retention-days: 7

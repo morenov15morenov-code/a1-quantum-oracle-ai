@@ -20,25 +20,35 @@ export default function AdminSettingsPage() {
           <CardTitle>Application Info</CardTitle>
           <CardDescription>General information about the platform.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Version</span>
-            <span>0.1.0</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Environment</span>
-            <span>{process.env.NODE_ENV}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">AI Model</span>
-            <span>
-              {process.env.OPENAI_API_KEY ? "GPT-4o" : "Mock (no API key set)"}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Database</span>
-            <span>SQLite</span>
-          </div>
+        <CardContent>
+          <dl className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <dt className="text-muted-foreground">Version</dt>
+              <dd>0.1.0</dd>
+            </div>
+            <div className="flex justify-between text-sm">
+              <dt className="text-muted-foreground">Environment</dt>
+              <dd>{process.env.NODE_ENV}</dd>
+            </div>
+            <div className="flex justify-between text-sm">
+              <dt className="text-muted-foreground">AI Model</dt>
+              <dd>
+                {process.env.OPENAI_API_KEY ? "GPT-4o" : "Mock (no API key set)"}
+              </dd>
+            </div>
+            <div className="flex justify-between text-sm">
+              <dt className="text-muted-foreground">Database</dt>
+              <dd>{process.env.DATABASE_URL?.startsWith("libsql") ? "Turso (LibSQL)" : "SQLite"}</dd>
+            </div>
+            <div className="flex justify-between text-sm">
+              <dt className="text-muted-foreground">Email</dt>
+              <dd>{process.env.RESEND_API_KEY ? "Resend (configured)" : "Console log only"}</dd>
+            </div>
+            <div className="flex justify-between text-sm">
+              <dt className="text-muted-foreground">Error Tracking</dt>
+              <dd>{process.env.SENTRY_DSN ? "Sentry (configured)" : "Not configured"}</dd>
+            </div>
+          </dl>
         </CardContent>
       </Card>
     </div>

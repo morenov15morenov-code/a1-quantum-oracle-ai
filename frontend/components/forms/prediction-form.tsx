@@ -58,21 +58,26 @@ export function PredictionForm({ onPredictionCreated }: PredictionFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" role="alert" aria-live="polite">
               {error}
             </div>
           )}
 
           <div className="space-y-2">
+            <label htmlFor="prediction-input" className="text-sm font-medium">
+              Your Question
+            </label>
             <textarea
+              id="prediction-input"
               className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder="What would you like to predict? For example: 'What will the stock market do next quarter?' or 'Will it rain tomorrow?'"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
               maxLength={2000}
+              aria-describedby="char-count"
             />
-            <p className="text-xs text-muted-foreground text-right">{input.length}/2000</p>
+            <p id="char-count" className="text-xs text-muted-foreground text-right">{input.length}/2000</p>
           </div>
 
           <Button type="submit" disabled={loading || !input.trim()}>

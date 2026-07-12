@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,7 +60,7 @@ export function LoginForm() {
       <CardContent>
         <form action={formAction} className="space-y-4">
           {state?.error && (
-            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" role="alert" aria-live="polite">
               {state.error}
             </div>
           )}
@@ -70,7 +71,12 @@ export function LoginForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link href="/request-reset" className="text-xs text-primary underline-offset-4 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
             <Input id="password" name="password" type="password" required />
           </div>
 
@@ -80,9 +86,9 @@ export function LoginForm() {
 
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <a href="/signup" className="text-primary underline-offset-4 hover:underline">
+            <Link href="/signup" className="text-primary underline-offset-4 hover:underline">
               Sign up
-            </a>
+            </Link>
           </p>
         </form>
       </CardContent>

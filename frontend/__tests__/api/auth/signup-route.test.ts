@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/auth/signup/route";
 
-const mockFindUnique = vi.fn();
 const mockCreate = vi.fn();
 const mockAnalyticsCreate = vi.fn();
 const mockRateLimit = vi.fn().mockReturnValue({ success: true, remaining: 5 });
@@ -9,7 +8,6 @@ const mockRateLimit = vi.fn().mockReturnValue({ success: true, remaining: 5 });
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
-      findUnique: (...args: unknown[]) => mockFindUnique(...args),
       create: (...args: unknown[]) => mockCreate(...args),
     },
     analyticsEvent: {
@@ -20,6 +18,10 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/rate-limit", () => ({
   rateLimit: (...args: unknown[]) => mockRateLimit(...args),
+}));
+
+vi.mock("@/lib/email", () => ({
+  sendWelcomeEmail: vi.fn().mockResolvedValue(true),
 }));
 
 function createRequest(body: Record<string, unknown>) {
@@ -36,7 +38,6 @@ describe("Signup API route", () => {
   });
 
   it("creates user with valid input", async () => {
-    mockFindUnique.mockResolvedValue(null);
     mockCreate.mockResolvedValue({
       id: "user-1",
       name: "Test User",
@@ -61,7 +62,11 @@ describe("Signup API route", () => {
   });
 
   it("rejects duplicate email", async () => {
-    mockFindUnique.mockResolvedValue({ id: "existing" });
+    const p2002Error = Object.assign(new Error("Unique constraint failed"), {
+      code: "P2002",
+      meta: { target: ["email"] },
+    });
+    mockCreate.mockRejectedValue(p2002Error);
 
     const response = await POST(
       createRequest({
@@ -110,7 +115,7 @@ describe("Signup API route", () => {
   });
 
   it("handles database errors gracefully", async () => {
-    mockFindUnique.mockRejectedValue(new Error("DB error"));
+    mockCreate.mockRejectedValue(new Error("DB error"));
 
     const response = await POST(
       createRequest({
@@ -125,7 +130,6 @@ describe("Signup API route", () => {
   });
 
   it("creates analytics event on signup", async () => {
-    mockFindUnique.mockResolvedValue(null);
     mockCreate.mockResolvedValue({
       id: "user-1",
       name: "Test User",
@@ -147,7 +151,6 @@ describe("Signup API route", () => {
   });
 
   it("hashes the password before storing", async () => {
-    mockFindUnique.mockResolvedValue(null);
     mockCreate.mockResolvedValue({ id: "user-1" });
 
     await POST(

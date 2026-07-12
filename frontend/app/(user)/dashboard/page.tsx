@@ -8,6 +8,7 @@ import type { PredictionResult } from "@/types";
 export default function DashboardPage() {
   const [predictions, setPredictions] = useState<PredictionResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const fetchPredictions = useCallback(async () => {
     try {
@@ -15,7 +16,11 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json();
         setPredictions(data.predictions ?? []);
+      } else {
+        setError("Failed to load predictions.");
       }
+    } catch {
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -38,6 +43,11 @@ export default function DashboardPage() {
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Recent Predictions</h2>
+        {error && (
+          <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (

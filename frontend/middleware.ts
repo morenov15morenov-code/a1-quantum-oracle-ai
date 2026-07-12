@@ -2,26 +2,49 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export { auth as default } from "@/lib/auth";
-
 export async function middleware(request: NextRequest) {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch {
+    const { pathname } = request.nextUrl;
+    if (pathname.startsWith("/api")) {
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   const { pathname } = request.nextUrl;
 
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/signup");
   const isAdminPage = pathname.startsWith("/admin");
   const isApiRoute = pathname.startsWith("/api");
+  const isAdminApiRoute = pathname.startsWith("/api/admin");
   const isPublic = pathname === "/" || pathname.startsWith("/api/health");
 
   if (isPublic) {
     return NextResponse.next();
   }
 
-  if (isApiRoute && !isAuthPage) {
+  if (isAdminApiRoute) {
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const role = (session.user as { role: string })?.role;
+    if (role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     return NextResponse.next();
   }
 
-  if (!session && !isAuthPage && !isPublic) {
+  if (isApiRoute) {
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return NextResponse.next();
+  }
+
+  if (!session && !isAuthPage) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);

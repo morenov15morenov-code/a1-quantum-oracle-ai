@@ -72,16 +72,30 @@ describe("Admin Predictions API - GET", () => {
 
   it("includes user data with predictions", async () => {
     mockAuth.mockResolvedValue({ user: { id: "admin-1", role: "ADMIN" } });
-    mockPrisma.prediction.findMany.mockResolvedValue([]);
-    mockPrisma.prediction.count.mockResolvedValue(0);
+    mockPrisma.prediction.findMany.mockResolvedValue([
+      {
+        id: "pred-1",
+        userId: "user-1",
+        input: "Test",
+        result: "Result",
+        confidence: 0.8,
+        reasoning: null,
+        model: "gpt-4o",
+        tokensIn: null,
+        tokensOut: null,
+        createdAt: new Date(),
+        user: { id: "user-1", name: "Alice", email: "alice@test.com" },
+      },
+    ]);
+    mockPrisma.prediction.count.mockResolvedValue(1);
 
     await GET(
       createGetRequest("http://localhost:3000/api/admin/predictions")
     );
 
-    const include = mockPrisma.prediction.findMany.mock.calls[0][0]?.include;
-    expect(include.user.select.name).toBe(true);
-    expect(include.user.select.email).toBe(true);
+    const findManyCall = mockPrisma.prediction.findMany.mock.calls[0][0];
+    expect(findManyCall.include.user.select.name).toBe(true);
+    expect(findManyCall.include.user.select.email).toBe(true);
   });
 
   it("supports custom pagination", async () => {
@@ -106,6 +120,7 @@ describe("Admin Predictions API - GET", () => {
       createGetRequest("http://localhost:3000/api/admin/predictions")
     );
 
-    expect(mockPrisma.prediction.findMany.mock.calls[0][0]?.orderBy.createdAt).toBe("desc");
+    const findManyCall = mockPrisma.prediction.findMany.mock.calls[0][0];
+    expect(findManyCall.orderBy.createdAt).toBe("desc");
   });
 });

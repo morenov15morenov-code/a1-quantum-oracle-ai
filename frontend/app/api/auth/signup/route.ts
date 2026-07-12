@@ -3,12 +3,13 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { signupSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
   const rl = rateLimit(`signup:${ip}`, 3, 60000);
   if (!rl.success) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   try {
@@ -19,21 +20,27 @@ export async function POST(request: Request) {
     }
 
     const { name, email, password } = parsed.data;
-
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
-    }
+    const normalizedEmail = email.toLowerCase().trim();
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
-    });
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: { name, email: normalizedEmail, password: hashedPassword },
+      });
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
+        return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
+      }
+      throw err;
+    }
 
     await prisma.analyticsEvent.create({
       data: { event: "user_signup", userId: user.id },
     });
+
+    sendWelcomeEmail(user.email, user.name).catch(() => {});
 
     return NextResponse.json({ id: user.id, name: user.name, email: user.email }, { status: 201 });
   } catch (error) {

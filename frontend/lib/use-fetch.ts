@@ -6,34 +6,33 @@ export function useFetch<T>(url: string, deps: unknown[] = []) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
-    Promise.resolve().then(() => {
-      if (!cancelled) setLoading(true);
-    });
+    setLoading(true);
+    setError(null);
 
-    fetch(url)
+    fetch(url, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error("Request failed");
         return res.json();
       })
       .then((result) => {
-        if (!cancelled) {
-          setData(result);
-          setError(null);
-        }
+        setData(result);
+        setError(null);
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message);
+        if (err.name !== "AbortError") {
+          setError(err.message);
+        }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       });
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   return { data, loading, error };
