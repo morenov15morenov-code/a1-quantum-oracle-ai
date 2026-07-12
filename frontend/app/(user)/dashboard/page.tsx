@@ -27,8 +27,26 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    fetchPredictions();
-  }, [fetchPredictions]);
+    const controller = new AbortController();
+    async function load() {
+      try {
+        const res = await fetch("/api/predictions?limit=5", { signal: controller.signal });
+        if (res.ok) {
+          const data = await res.json();
+          setPredictions(data.predictions ?? []);
+        } else {
+          setError("Failed to load predictions.");
+        }
+      } catch (err: unknown) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setError("Something went wrong. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+    return () => controller.abort();
+  }, []);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">

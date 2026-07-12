@@ -8,7 +8,7 @@ export function useFetch<T>(url: string, deps: unknown[] = []) {
   useEffect(() => {
     const controller = new AbortController();
 
-    setLoading(true);
+    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect
     setError(null);
 
     fetch(url, { signal: controller.signal })
