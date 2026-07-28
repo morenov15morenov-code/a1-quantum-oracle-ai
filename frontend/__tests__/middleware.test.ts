@@ -23,70 +23,70 @@ describe("Middleware auth logic", () => {
 
   it("allows access to public pages", async () => {
     mockAuth.mockResolvedValue(null);
-    const { middleware } = await import("@/middleware");
+    const { proxy } = await import("@/proxy");
     const req = mockRequest("/");
-    const response = await middleware(req);
+    const response = await proxy(req);
     expect(response?.headers).toBeDefined();
   });
 
   it("redirects unauthenticated user to login", async () => {
     mockAuth.mockResolvedValue(null);
-    const { middleware } = await import("@/middleware");
+    const { proxy } = await import("@/proxy");
     const req = mockRequest("/dashboard");
-    const response = await middleware(req);
+    const response = await proxy(req);
     expect(response?.status).toBe(307);
   });
 
   it("allows API routes without auth", async () => {
     mockAuth.mockResolvedValue(null);
-    const { middleware } = await import("@/middleware");
+    const { proxy } = await import("@/proxy");
     const req = mockRequest("/api/predictions");
-    const response = await middleware(req);
+    const response = await proxy(req);
     expect(response?.headers).toBeDefined();
   });
 
   it("blocks API admin routes without auth", async () => {
     mockAuth.mockResolvedValue(null);
-    const { middleware } = await import("@/middleware");
+    const { proxy } = await import("@/proxy");
     const req = mockRequest("/api/admin/users");
-    const response = await middleware(req);
+    const response = await proxy(req);
     expect(response?.headers).toBeDefined();
   });
 
   it("redirects authenticated user away from auth pages", async () => {
     mockAuth.mockResolvedValue({ user: { id: "1", role: "USER" } });
-    const { middleware } = await import("@/middleware");
+    const { proxy } = await import("@/proxy");
     const req = mockRequest("/login");
-    const response = await middleware(req);
+    const response = await proxy(req);
     expect(response?.status).toBe(307);
   });
 
   it("redirects admin to admin dashboard from auth pages", async () => {
     mockAuth.mockResolvedValue({ user: { id: "1", role: "ADMIN" } });
-    const { middleware } = await import("@/middleware");
+    const { proxy } = await import("@/proxy");
     const req = mockRequest("/login");
-    const response = await middleware(req);
+    const response = await proxy(req);
     expect(response?.status).toBe(307);
   });
 
   it("redirects non-admin away from admin pages", async () => {
     mockAuth.mockResolvedValue({ user: { id: "1", role: "USER" } });
-    const { middleware } = await import("@/middleware");
+    const { proxy } = await import("@/proxy");
     const req = mockRequest("/admin/dashboard");
-    const response = await middleware(req);
+    const response = await proxy(req);
     expect(response?.status).toBe(307);
   });
 
   it("allows admin to access admin pages", async () => {
     mockAuth.mockResolvedValue({ user: { id: "1", role: "ADMIN" } });
-    const { middleware } = await import("@/middleware");
+    const { proxy } = await import("@/proxy");
     const req = mockRequest("/admin/dashboard");
-    const response = await middleware(req);
+    const response = await proxy(req);
     expect(response?.headers).toBeDefined();
   });
 
   it("exports config matcher", async () => {
-    const { config } = await import("@/middleware");
+    const { config } = await import("@/proxy");
     expect(config).toBeDefined();
     expect(config.matcher).toBeDefined();
     expect(config.matcher[0]).toContain("_next/static");

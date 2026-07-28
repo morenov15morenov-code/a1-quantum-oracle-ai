@@ -47,7 +47,7 @@ const API_RATE_LIMITS: Record<string, number> = {
   default: 30,
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let session;
   try {
     session = await auth();
