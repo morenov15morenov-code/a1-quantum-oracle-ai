@@ -99,6 +99,6 @@ test.describe("Navigation", () => {
     const body = await response.json();
     expect(body).toHaveProperty("status", "ok");
     expect(body).toHaveProperty("timestamp");
-    expect(body).toHaveProperty("uptime");
+    expect(body).toHaveProperty("version");
   });
 });
