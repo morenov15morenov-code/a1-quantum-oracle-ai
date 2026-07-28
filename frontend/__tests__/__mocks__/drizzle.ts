@@ -13,17 +13,17 @@ export function createChain(finalResult: unknown = undefined) {
     return chain;
   };
 
-  chain.from = vi.fn((...args: unknown[]) => setTerminal(finalResult));
-  chain.where = vi.fn((...args: unknown[]) => setTerminal(finalResult));
-  chain.orderBy = vi.fn((...args: unknown[]) => setTerminal(finalResult));
-  chain.limit = vi.fn((...args: unknown[]) => setTerminal(finalResult));
-  chain.offset = vi.fn((...args: unknown[]) => setTerminal(finalResult));
-  chain.groupBy = vi.fn((...args: unknown[]) => setTerminal(finalResult));
-  chain.innerJoin = vi.fn((...args: unknown[]) => setTerminal(finalResult));
-  chain.leftJoin = vi.fn((...args: unknown[]) => setTerminal(finalResult));
-  chain.values = vi.fn((...args: unknown[]) => setTerminal(finalResult));
-  chain.set = vi.fn((...args: unknown[]) => setTerminal(finalResult));
-  chain.returning = vi.fn((...args: unknown[]) => setTerminal(finalResult));
+  chain.from = vi.fn(() => setTerminal(finalResult));
+  chain.where = vi.fn(() => setTerminal(finalResult));
+  chain.orderBy = vi.fn(() => setTerminal(finalResult));
+  chain.limit = vi.fn(() => setTerminal(finalResult));
+  chain.offset = vi.fn(() => setTerminal(finalResult));
+  chain.groupBy = vi.fn(() => setTerminal(finalResult));
+  chain.innerJoin = vi.fn(() => setTerminal(finalResult));
+  chain.leftJoin = vi.fn(() => setTerminal(finalResult));
+  chain.values = vi.fn(() => setTerminal(finalResult));
+  chain.set = vi.fn(() => setTerminal(finalResult));
+  chain.returning = vi.fn(() => setTerminal(finalResult));
 
   setTerminal(finalResult);
   return chain;

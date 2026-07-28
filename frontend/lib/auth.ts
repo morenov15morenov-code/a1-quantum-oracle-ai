@@ -8,6 +8,7 @@ import { users, accounts, sessions } from "@/lib/schema";
 import bcrypt from "bcryptjs";
 import type { Role } from "@/types";
 import type { Provider } from "next-auth/providers";
+import type { Adapter } from "@auth/core/adapters";
 import { eq } from "drizzle-orm";
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -20,7 +21,7 @@ const providers: Provider[] = [
       email: { label: "Email", type: "email" },
       password: { label: "Password", type: "password" },
     },
-    async authorize(credentials) {
+    async authorize(credentials: Record<string, unknown> | undefined) {
       if (!credentials?.email || !credentials?.password) return null;
 
       const email = (credentials.email as string).toLowerCase().trim();
@@ -94,12 +95,11 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
     sessionsTable: sessions,
-  }) as any,
+  }) as unknown as Adapter,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -121,7 +121,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return session;
     },
-    async signIn({ user, account }) {
+    async signIn({ user: rawUser, account: rawAccount }: { user: Record<string, unknown>; account: Record<string, unknown> | null }) {
+      const user = rawUser as { email?: string; name?: string; id?: string; role?: string };
+      const account = rawAccount as { provider?: string } | null;
       if (account?.provider && account.provider !== "credentials") {
         const email = user.email?.toLowerCase().trim();
         if (!email) return false;
@@ -130,7 +132,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (existingUser) {
           user.id = existingUser.id;
-          (user as { role: Role }).role = existingUser.role as Role;
+          user.role = existingUser.role as Role;
           return true;
         }
 
@@ -142,7 +144,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }).returning().get();
 
         user.id = newUser.id;
-        (user as { role: Role }).role = newUser.role as Role;
+        user.role = newUser.role as Role;
 
         return true;
       }

@@ -51,6 +51,10 @@ jobs:
           DATABASE_URL: "file:./prisma/dev.db"
           AUTH_SECRET: "ci-test-secret-not-for-production"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      - name: Push schema
+        run: cd frontend && npx drizzle-kit push
+        env:
+          DATABASE_URL: "file:./prisma/dev.db"
       - name: Seed database
         run: cd frontend && npx tsx scripts/seed.ts
         env:

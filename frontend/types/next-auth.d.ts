@@ -13,7 +13,7 @@ declare module "next-auth/providers/credentials" {
 }
 
 declare module "next-auth/react" {
-  export function useSession(): { data: any; status: string };
+  export function useSession(): { data: any; status: string; update: (data?: any) => Promise<any> };
   export function SessionProvider(props: {
     children: React.ReactNode;
     session?: any;

@@ -14,7 +14,7 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"], channel: "msedge" },
+      use: { ...devices["Desktop Chrome"] },
     },
   ],
   webServer: {
