@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { users, analyticsEvents } from "@/lib/schema";
 import bcrypt from "bcryptjs";
 import { signupSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendWelcomeEmail } from "@/lib/email";
+import { eq } from "drizzle-orm";
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
@@ -21,24 +23,20 @@ export async function POST(request: Request) {
 
     const { name, email, password } = parsed.data;
     const normalizedEmail = email.toLowerCase().trim();
-
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    let user;
-    try {
-      user = await prisma.user.create({
-        data: { name, email: normalizedEmail, password: hashedPassword },
-      });
-    } catch (err: unknown) {
-      if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
-        return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
-      }
-      throw err;
+    const existing = await db.select().from(users).where(eq(users.email, normalizedEmail)).get();
+    if (existing) {
+      return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
     }
 
-    await prisma.analyticsEvent.create({
-      data: { event: "user_signup", userId: user.id },
-    });
+    const user = await db.insert(users).values({
+      name,
+      email: normalizedEmail,
+      password: hashedPassword,
+    }).returning().get();
+
+    await db.insert(analyticsEvents).values({ event: "user_signup", userId: user.id }).run();
 
     sendWelcomeEmail(user.email, user.name).catch(() => {});
 

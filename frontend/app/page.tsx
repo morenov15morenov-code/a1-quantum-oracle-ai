@@ -8,7 +8,12 @@ export default function Home() {
           Atlas Oracle
         </h1>
         <p className="text-xl text-muted-foreground">
-          AI-powered prediction and forecasting tool. Make informed decisions with data-driven insights.
+          A universal foresight engine for anyone facing any decision.
+          Ask any question — career, relationships, health, finance, creativity, life —
+          and receive AI-powered predictions with confidence scores and reasoning.
+        </p>
+        <p className="text-sm text-muted-foreground/70">
+          Not a market tool. Not a niche app. An oracle for every human question.
         </p>
         <div className="flex items-center justify-center gap-4">
           <Link

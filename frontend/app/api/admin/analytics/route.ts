@@ -1,65 +1,71 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { users, predictions } from "@/lib/schema";
+import { rateLimit } from "@/lib/rate-limit";
+import { eq, sql, gte } from "drizzle-orm";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user || (session.user as { role: string }).role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = rateLimit(`admin-analytics:${session.user.id}:${ip}`, 10, 60000);
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
+  }
+
   try {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
-    const [totalUsers, totalPredictions, activeUsers, avgResult] = await Promise.all([
-      prisma.user.count(),
-      prisma.prediction.count(),
-      prisma.user.count({ where: { active: true } }),
-      prisma.prediction.aggregate({ _avg: { confidence: true } }),
-    ]);
+    const [{ totalUsers }] = await db.select({ totalUsers: sql<number>`count(*)` }).from(users).all();
+    const [{ totalPredictions }] = await db.select({ totalPredictions: sql<number>`count(*)` }).from(predictions).all();
+    const [{ activeUsers }] = await db.select({ activeUsers: sql<number>`count(*)` }).from(users).where(eq(users.active, true)).all();
+    const [{ avgConfidence }] = await db.select({ avgConfidence: sql<number>`coalesce(avg(${predictions.confidence}), 0)` }).from(predictions).all();
 
-    const avgConfidence = avgResult._avg.confidence ?? 0;
+    const recentPredictions = await db.select({ createdAt: predictions.createdAt })
+      .from(predictions)
+      .where(gte(predictions.createdAt, new Date(thirtyDaysAgo)))
+      .all();
 
-    const [recentPredictions, recentUsers, topModels, predictionsByUser] = await Promise.all([
-      prisma.prediction.findMany({
-        where: { createdAt: { gte: thirtyDaysAgo } },
-        select: { createdAt: true },
-      }),
-      prisma.user.findMany({
-        where: { createdAt: { gte: thirtyDaysAgo } },
-        select: { createdAt: true },
-      }),
-      prisma.prediction.groupBy({
-        by: ["model"],
-        _count: true,
-        orderBy: { _count: { model: "desc" } },
-        take: 5,
-      }),
-      prisma.prediction.groupBy({
-        by: ["userId"],
-        _count: true,
-        orderBy: { _count: { userId: "desc" } },
-        take: 10,
-      }),
-    ]);
+    const recentUsers = await db.select({ createdAt: users.createdAt })
+      .from(users)
+      .where(gte(users.createdAt, new Date(thirtyDaysAgo)))
+      .all();
+
+    const topModels = await db.select({ model: predictions.model, count: sql<number>`count(*)` })
+      .from(predictions)
+      .groupBy(predictions.model)
+      .orderBy(sql`count(*) DESC`)
+      .limit(5)
+      .all();
+
+    const predictionsByUser = await db.select({ userId: predictions.userId, count: sql<number>`count(*)` })
+      .from(predictions)
+      .groupBy(predictions.userId)
+      .orderBy(sql`count(*) DESC`)
+      .limit(10)
+      .all();
 
     const predictionsByDayMap = new Map<string, number>();
     for (const p of recentPredictions) {
-      const date = p.createdAt.toISOString().split("T")[0];
+      const date = new Date(p.createdAt).toISOString().split("T")[0];
       predictionsByDayMap.set(date, (predictionsByDayMap.get(date) ?? 0) + 1);
     }
 
     const usersByDayMap = new Map<string, number>();
     for (const u of recentUsers) {
-      const date = u.createdAt.toISOString().split("T")[0];
+      const date = new Date(u.createdAt).toISOString().split("T")[0];
       usersByDayMap.set(date, (usersByDayMap.get(date) ?? 0) + 1);
     }
 
-    const users = await prisma.user.findMany({
-      where: { id: { in: predictionsByUser.map((p: { userId: string }) => p.userId) } },
-      select: { id: true, name: true },
-    });
-    const userMap = new Map(users.map((u: { id: string; name: string }) => [u.id, u.name]));
+    const userIds = predictionsByUser.map((p) => p.userId);
+    const userNames = userIds.length > 0
+      ? await db.select({ id: users.id, name: users.name }).from(users).where(sql`${users.id} IN (${sql.join(userIds.map((id) => sql`${id}`), sql`, `)})`).all()
+      : [];
+    const userMap = new Map(userNames.map((u) => [u.id, u.name]));
 
     return NextResponse.json({
       totalUsers,
@@ -68,11 +74,11 @@ export async function GET() {
       avgConfidence,
       predictionsByDay: Array.from(predictionsByDayMap.entries()).map(([date, count]) => ({ date, count })),
       usersByDay: Array.from(usersByDayMap.entries()).map(([date, count]) => ({ date, count })),
-      topModels: topModels.map((m: { model: string; _count: number }) => ({ model: m.model, count: m._count })),
-      predictionsByUser: predictionsByUser.map((p: { userId: string; _count: number }) => ({
+      topModels: topModels.map((m) => ({ model: m.model, count: m.count })),
+      predictionsByUser: predictionsByUser.map((p) => ({
         userId: p.userId,
         userName: userMap.get(p.userId) ?? "Unknown",
-        count: p._count,
+        count: p.count,
       })),
     });
   } catch (error) {

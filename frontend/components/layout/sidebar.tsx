@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const sidebarItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "chart" },
@@ -49,6 +49,17 @@ function SidebarIcon({ icon }: { icon: string }) {
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") closeMobile();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [mobileOpen, closeMobile]);
 
   const sidebarContent = (
     <>

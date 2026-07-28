@@ -10,6 +10,16 @@ export interface PredictionResult {
   tokensIn: number | null;
   tokensOut: number | null;
   createdAt: Date | string;
+  feedback?: PredictionFeedbackData | null;
+}
+
+export interface PredictionFeedbackData {
+  id: string;
+  rating: number;
+  wasAccurate: boolean | null;
+  comment: string | null;
+  domain: string | null;
+  createdAt?: Date | string;
 }
 
 export interface UserProfile {
@@ -19,6 +29,33 @@ export interface UserProfile {
   role: Role;
   active: boolean;
   createdAt: Date;
+}
+
+export interface SubscriptionData {
+  id: string;
+  tier: string;
+  predsUsed: number;
+  predsLimit: number;
+  periodStart: Date | string;
+  periodEnd: Date | string | null;
+}
+
+export interface UserAnalyticsData {
+  totalPredictions: number;
+  totalFeedback: number;
+  avgRating: number;
+  accuracyRate: number;
+  predictionsByDomain: { domain: string; count: number }[];
+  ratingsByMonth: { month: string; avgRating: number; count: number }[];
+  recentPredictions: {
+    id: string;
+    input: string;
+    confidence: number | null;
+    rating: number | null;
+    wasAccurate: boolean | null;
+    domain: string | null;
+    createdAt: Date | string;
+  }[];
 }
 
 export interface AnalyticsData {

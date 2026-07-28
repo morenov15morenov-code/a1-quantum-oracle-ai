@@ -1,8 +1,12 @@
 # Atlas Oracle
 
-AI-powered prediction and forecasting tool. Ask questions about the future and receive AI-generated predictions with confidence scores and reasoning.
+**A universal foresight engine for anyone facing any decision.**
 
-Built with Next.js 16, React 19, Auth.js, Prisma (SQLite/Turso), and OpenAI GPT-4o.
+Ask any question — career moves, relationship choices, health decisions, financial planning, creative pursuits, education paths, family matters, business strategy — and receive AI-powered predictions with confidence scores and transparent reasoning.
+
+Not a market tool. Not a niche app. An oracle for every human question.
+
+Built with Next.js 16, React 19, Auth.js, Drizzle ORM (SQLite/Turso), and OpenAI GPT-4o.
 
 ---
 
@@ -40,11 +44,11 @@ npm install
 # Set up environment
 copy .env.example .env.local
 
-# Initialize the database
-npx prisma db push
+# Push the schema to create/update the database
+npm run db:push
 
 # Seed the admin user
-npx tsx scripts/seed.ts
+npm run db:seed
 
 # Start the dev server
 npm run dev
@@ -87,8 +91,11 @@ If you see *"Invalid email or password"*, check your credentials or create a new
 On the **Dashboard** (`/dashboard`):
 
 1. Type a question into the textarea (10–2000 characters).
-   - Example: *"What will the stock market do next quarter?"*
-   - Example: *"Will it rain tomorrow?"*
+   - Example: *"Should I leave my corporate job to pursue UX design?"*
+   - Example: *"Will this startup idea succeed in the current market?"*
+   - Example: *"Is it the right time to buy a house?"*
+   - Example: *"Should I move to a new city for a fresh start?"*
+   - Example: *"Will my child adjust well to the new school?"*
 2. A character counter shows your progress (`X/2000`).
 3. Click **Generate Prediction**.
 4. Wait a few seconds while the AI generates a response.
@@ -184,12 +191,22 @@ The **Settings** page (`/admin/settings`) displays read-only platform informatio
 | `AUTH_SECRET` | Yes | Random string for JWT encryption (generate with `openssl rand -base64 32`) |
 | `OPENAI_API_KEY` | No | OpenAI API key for GPT-4o predictions; omit to use mock predictions |
 | `NEXT_PUBLIC_APP_URL` | Yes | Public URL of the app (e.g., `http://localhost:3000` or `https://your-app.vercel.app`) |
+| `RESEND_API_KEY` | No | Resend API key for email delivery (password reset, welcome emails) |
+| `RESEND_FROM_EMAIL` | No | Sender address for emails (default: `Atlas Oracle <noreply@atlas-oracle.com>`) |
+| `SENTRY_DSN` | No | Sentry DSN for error tracking |
+| `SENTRY_ORG` | No | Sentry organization slug |
+| `SENTRY_PROJECT` | No | Sentry project slug |
+| `SENTRY_AUTH_TOKEN` | No | Sentry auth token (enables webpack plugin during build) |
+| `GOOGLE_CLIENT_ID` | No | Google OAuth client ID (both ID and secret required) |
+| `GOOGLE_CLIENT_SECRET` | No | Google OAuth client secret |
+| `GITHUB_CLIENT_ID` | No | GitHub OAuth client ID (both ID and secret required) |
+| `GITHUB_CLIENT_SECRET` | No | GitHub OAuth client secret |
 
 ---
 
 ## Database
 
-Atlas Oracle uses **Prisma** with the **LibSQL adapter**.
+Atlas Oracle uses **Drizzle ORM** with the **LibSQL adapter**.
 
 ### Local Development (SQLite)
 
@@ -201,13 +218,13 @@ DATABASE_URL="file:./prisma/dev.db"
 
 ```bash
 # Push schema to create/update the database
-npx prisma db push
+npm run db:push
 
-# Open Prisma Studio to browse data
-npx prisma studio
+# Open Drizzle Studio to browse data
+npm run db:studio
 
 # Seed the admin user
-npx tsx scripts/seed.ts
+npm run db:seed
 ```
 
 ### Production (Turso)
@@ -224,7 +241,7 @@ For Vercel and other serverless platforms, use **Turso** (free tier available):
    ```
    libsql://your-db-name-your-org.turso.io?authToken=your-token
    ```
-8. Push the schema: `npx prisma db push`
+8. Push the schema: `npm run db:push`
 
 No code changes needed — the app auto-detects Turso from the `DATABASE_URL`.
 
@@ -232,6 +249,8 @@ No code changes needed — the app auto-detects Turso from the `DATABASE_URL`.
 
 - **User** — id, name, email, hashed password, role (USER/ADMIN), active boolean, timestamps
 - **Prediction** — id, input, result, confidence, reasoning, model, userId, timestamps
+- **Subscription** — id, userId, tier (FREE/PRO), predsUsed, predsLimit, period dates
+- **PredictionFeedback** — id, predictionId, userId, rating, wasAccurate, comment, domain
 - **AnalyticsEvent** — id, event type, userId (optional), metadata, timestamp
 - **Account / Session** — standard Auth.js models
 
@@ -281,19 +300,23 @@ All tests use Vitest with jsdom and `@testing-library/react`.
 6. After first deploy, seed the admin user via Vercel CLI:
    ```bash
    npx vercel env pull .env.local
-   npx prisma db push
-   npx tsx scripts/seed.ts
+   npm run db:push
+   npm run db:seed
    ```
 
-The build automatically runs `prisma generate` via the `postbuild` script.
-
 ### Docker
+
+```bash
+docker compose up -d
+```
+
+Or manually:
 
 ```bash
 cd frontend
 docker build -t atlas-oracle .
 docker run -p 3000:3000 \
-  -e DATABASE_URL="file:./data.db" \
+  -e DATABASE_URL="file:/app/data/dev.db" \
   -e AUTH_SECRET="your-secret" \
   -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
   atlas-oracle
@@ -316,8 +339,8 @@ npm start
 | Framework | Next.js 16 (App Router, standalone output) |
 | UI Library | React 19 |
 | Styling | Tailwind CSS 4 |
-| Auth | Auth.js v5 (NextAuth) with credentials provider |
-| Database ORM | Prisma 7 + LibSQL adapter |
+| Auth | Auth.js v5 (NextAuth) with Credentials + Google/GitHub OAuth |
+| Database ORM | Drizzle ORM + LibSQL adapter |
 | Database | SQLite (local) / Turso (production) |
 | AI | OpenAI GPT-4o (with mock fallback) |
 | Testing | Vitest + Testing Library + Playwright |

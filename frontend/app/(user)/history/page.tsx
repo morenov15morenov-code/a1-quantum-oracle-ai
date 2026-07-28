@@ -2,6 +2,7 @@
 
 import { useFetch } from "@/lib/use-fetch";
 import { PredictionResultCard } from "@/components/predictions/prediction-result";
+import { PredictionFeedback } from "@/components/predictions/prediction-feedback";
 import { useState } from "react";
 
 interface PredictionsResponse {
@@ -13,6 +14,13 @@ interface PredictionsResponse {
     reasoning: string | null;
     model: string;
     createdAt: string;
+    feedback?: {
+      id: string;
+      rating: number;
+      wasAccurate: boolean | null;
+      comment: string | null;
+      domain: string | null;
+    } | null;
   }[];
   totalPages: number;
 }
@@ -45,7 +53,15 @@ export default function HistoryPage() {
         <>
           <div className="space-y-4">
             {data.predictions.map((p) => (
-              <PredictionResultCard key={p.id} prediction={p} />
+              <div key={p.id} className="space-y-4">
+                <PredictionResultCard prediction={p} />
+                {!p.feedback && (
+                  <PredictionFeedback
+                    predictionId={p.id}
+                    onFeedbackSubmitted={() => setPage((prev) => prev)}
+                  />
+                )}
+              </div>
             ))}
           </div>
 

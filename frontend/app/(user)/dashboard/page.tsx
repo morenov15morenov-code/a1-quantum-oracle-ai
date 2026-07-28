@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { PredictionForm } from "@/components/forms/prediction-form";
 import { PredictionResultCard } from "@/components/predictions/prediction-result";
+import { PredictionFeedback } from "@/components/predictions/prediction-feedback";
+import { SubscriptionBadge } from "@/components/subscription/subscription-badge";
 import type { PredictionResult } from "@/types";
 
 export default function DashboardPage() {
@@ -10,16 +12,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchPredictions = useCallback(async () => {
+  const fetchPredictions = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch("/api/predictions?limit=5");
+      const res = await fetch("/api/predictions?limit=5", { signal });
       if (res.ok) {
         const data = await res.json();
         setPredictions(data.predictions ?? []);
       } else {
         setError("Failed to load predictions.");
       }
-    } catch {
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -28,33 +31,21 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    async function load() {
-      try {
-        const res = await fetch("/api/predictions?limit=5", { signal: controller.signal });
-        if (res.ok) {
-          const data = await res.json();
-          setPredictions(data.predictions ?? []);
-        } else {
-          setError("Failed to load predictions.");
-        }
-      } catch (err: unknown) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        setError("Something went wrong. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchPredictions resets state on mount; abort cleans up
+    fetchPredictions(controller.signal);
     return () => controller.abort();
-  }, []);
+  }, [fetchPredictions]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Predictions</h1>
-        <p className="text-muted-foreground">
-          Ask a question and get an AI-powered forecast.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Predictions</h1>
+          <p className="text-muted-foreground">
+            Ask a question and get an AI-powered forecast.
+          </p>
+        </div>
+        <SubscriptionBadge />
       </div>
 
       <PredictionForm onPredictionCreated={fetchPredictions} />
@@ -78,7 +69,15 @@ export default function DashboardPage() {
           </p>
         ) : (
           predictions.map((p) => (
-            <PredictionResultCard key={p.id} prediction={p} />
+            <div key={p.id} className="space-y-4">
+              <PredictionResultCard prediction={p} />
+              {!p.feedback && (
+                <PredictionFeedback
+                  predictionId={p.id}
+                  onFeedbackSubmitted={() => fetchPredictions()}
+                />
+              )}
+            </div>
           ))
         )}
       </div>

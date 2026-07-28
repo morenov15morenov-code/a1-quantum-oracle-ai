@@ -2,7 +2,7 @@
 
 ## Overview
 
-Atlas Oracle is a full-stack AI-powered prediction and forecasting application built as a monolithic Next.js 16 App Router application with API routes, Auth.js authentication, Prisma ORM, and an optional Electron desktop wrapper.
+Atlas Oracle is a full-stack universal foresight engine — not a market tool, not a niche app, but an oracle for every human question. Ask anything: career moves, relationship decisions, health choices, financial planning, creative pursuits, education paths, family matters, or business strategy. The Oracle delivers AI-powered predictions with confidence scores and transparent reasoning to anyone facing any decision.
 
 ---
 
@@ -33,8 +33,8 @@ Atlas Oracle is a full-stack AI-powered prediction and forecasting application b
                  │             │             │
                  ▼             ▼             ▼
          ┌──────────┐  ┌──────────┐  ┌──────────────┐
-         │  SQLite  │  │  Auth.js │  │  OpenAI API  │
-         │ (Prisma) │  │  (JWT)   │  │ (or Mock)    │
+          │  SQLite  │  │  Auth.js │  │  OpenAI API  │
+          │ (Drizzle)│  │  (JWT)   │  │ (or Mock)    │
          └──────────┘  └──────────┘  └──────────────┘
 ```
 
@@ -71,15 +71,17 @@ atlas-oracle/                          # Project root
 │   │
 │   ├── lib/                           # Shared utilities
 │   │   ├── ai.ts                      # AI prediction engine (OpenAI + mock)
-│   │   ├── auth.ts                    # NextAuth configuration
-│   │   ├── db.ts                      # Prisma client singleton
+│   │   ├── auth.ts                    # NextAuth + DrizzleAdapter
+│   │   ├── db.ts                      # Drizzle client singleton
 │   │   ├── rate-limit.ts              # In-memory rate limiter
 │   │   ├── use-fetch.ts               # React useFetch hook
 │   │   ├── utils.ts                   # cn(), formatDate(), formatConfidence()
 │   │   └── validations.ts             # Zod schemas
 │   │
 │   ├── types/                         # TypeScript type definitions
-│   ├── prisma/                        # Prisma schema & SQLite database
+│   ├── schema.ts                      # Drizzle schema (7 tables)
+│   ├── drizzle.config.ts              # Drizzle Kit config
+│   ├── prisma/                        # SQLite database file
 │   ├── scripts/                       # Database seed script
 │   ├── assets/                        # App icons
 │   ├── e2e/                           # Playwright end-to-end tests
@@ -91,7 +93,6 @@ atlas-oracle/                          # Project root
 │   ├── eslint.config.mjs              # ESLint flat config
 │   ├── tsconfig.json                  # TypeScript configuration
 │   ├── postcss.config.mjs             # PostCSS (Tailwind CSS 4)
-│   ├── prisma.config.ts               # Prisma 7 configuration
 │   └── package.json                   # Dependencies & scripts
 │
 ├── electron/                          # Electron desktop wrapper
@@ -113,8 +114,8 @@ atlas-oracle/                          # Project root
 | Framework        | Next.js 16 (App Router, standalone)       |
 | UI               | React 19, TypeScript 5 (strict)           |
 | Styling          | Tailwind CSS 4                            |
-| Authentication   | Auth.js v5 (Credentials, JWT strategy)    |
-| Database ORM     | Prisma 7 + LibSQL adapter                 |
+| Authentication   | Auth.js v5 (Credentials, Google, GitHub OAuth, JWT) |
+| Database ORM     | Drizzle ORM + LibSQL adapter             |
 | Database         | SQLite                                    |
 | AI Engine        | OpenAI GPT-4o (deterministic mock fallback)|
 | Input Validation | Zod 4                                     |
@@ -141,7 +142,7 @@ atlas-oracle/                          # Project root
            │
            ▼
 ┌─────────────────────┐     ┌──────────────────────┐     ┌──────────┐
-│   API Route Handlers│────►│  Prisma ORM           │────►│  SQLite  │
+│   API Route Handlers│────►│  Drizzle ORM          │────►│  SQLite  │
 │   (server-side)     │◄────│  (LibSQL adapter)     │◄────│          │
 └──────────┬──────────┘     └──────────────────────┘     └──────────┘
            │
@@ -206,7 +207,7 @@ atlas-oracle/                          # Project root
 
 ---
 
-## Database Schema
+## Database Schema (Drizzle ORM)
 
 - **User** — id, name, email, password (bcrypt), role (USER/ADMIN), active, timestamps
 - **Prediction** — id, userId (FK), input, result, confidence, reasoning, model, tokensIn/Out, createdAt

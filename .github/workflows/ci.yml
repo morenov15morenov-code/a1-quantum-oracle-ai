@@ -11,31 +11,63 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
       - name: Install dependencies
         run: cd frontend && npm ci
-
       - name: Lint
         run: cd frontend && npm run lint
-
       - name: Type check
         run: cd frontend && npm run typecheck
-
       - name: Build
         run: cd frontend && npm run build
         env:
           DATABASE_URL: "file:./prisma/dev.db"
           AUTH_SECRET: "ci-test-secret-not-for-production"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
-
       - name: Test
         run: cd frontend && npm run test
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: cd frontend && npm ci
+      - name: Install Playwright browsers
+        run: cd frontend && npx playwright install --with-deps chromium
+      - name: Build
+        run: cd frontend && npm run build
+        env:
+          DATABASE_URL: "file:./prisma/dev.db"
+          AUTH_SECRET: "ci-test-secret-not-for-production"
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      - name: Seed database
+        run: cd frontend && npx tsx scripts/seed.ts
+        env:
+          DATABASE_URL: "file:./prisma/dev.db"
+      - name: Run E2E tests
+        run: cd frontend && npx playwright test
+        env:
+          DATABASE_URL: "file:./prisma/dev.db"
+          AUTH_SECRET: "ci-test-secret-not-for-production"
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
 
   electron-build:
     runs-on: ubuntu-latest
@@ -43,32 +75,45 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
       - name: Install frontend dependencies
         run: cd frontend && npm ci
-
       - name: Install root dependencies
         run: npm ci
-
       - name: Build frontend
         run: cd frontend && npm run build
         env:
           DATABASE_URL: "file:./prisma/dev.db"
           AUTH_SECRET: "ci-test-secret"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
-
       - name: Build Electron (Linux)
         run: npx electron-builder --linux --config electron-builder.yml
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: atlas-oracle-linux
           path: release/*.AppImage
           retention-days: 7
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -f frontend/Dockerfile -t atlas-oracle:latest .
+      - name: Test Docker health check
+        run: |
+          docker run -d --name atlas-test -p 3000:3000 \
+            -e DATABASE_URL="file:/app/data/dev.db" \
+            -e AUTH_SECRET="ci-test-secret" \
+            -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
+            atlas-oracle:latest
+          sleep 10
+          curl -f http://localhost:3000/api/health || exit 1
+          docker stop atlas-test

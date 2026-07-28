@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { users } from "@/lib/schema";
 import crypto from "crypto";
 import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { eq } from "drizzle-orm";
 
 const requestResetSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -28,7 +30,7 @@ export async function POST(request: Request) {
     }
 
     const email = parsed.data.email.toLowerCase().trim();
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await db.select().from(users).where(eq(users.email, email)).get();
 
     const successMessage = "If an account exists, a reset link has been sent.";
 
@@ -40,13 +42,13 @@ export async function POST(request: Request) {
     const hashedToken = hashToken(rawToken);
     const expires = new Date(Date.now() + 60 * 60 * 1000);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
+    await db.update(users)
+      .set({
         passwordResetToken: hashedToken,
         passwordResetExpires: expires,
-      },
-    });
+      })
+      .where(eq(users.id, user.id))
+      .run();
 
     const appUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
     const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;

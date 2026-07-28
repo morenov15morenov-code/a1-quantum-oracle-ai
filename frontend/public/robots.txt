@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /history/
+Disallow: /settings/
+
+Sitemap: https://atlas-oracle.vercel.app/sitemap.xml

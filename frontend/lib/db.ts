@@ -1,24 +1,21 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { drizzle } from "drizzle-orm/libsql";
+import * as schema from "./schema";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+const globalForDb = globalThis as unknown as {
+  db: ReturnType<typeof drizzle<typeof schema>> | undefined;
 };
 
-function createPrismaClient() {
+function createDb() {
   const url = process.env.DATABASE_URL;
-
   if (!url) {
     throw new Error(
       "DATABASE_URL is not set. For local dev use: file:./prisma/dev.db\n" +
-        "For Vercel/Turso use: libsql://your-db.turso.io?authToken=your-token"
+        "For Turso use: libsql://your-db.turso.io?authToken=your-token"
     );
   }
-
-  const adapter = new PrismaLibSql({ url });
-  return new PrismaClient({ adapter });
+  return drizzle(url, { schema });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+export const db = globalForDb.db ?? createDb();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") globalForDb.db = db;

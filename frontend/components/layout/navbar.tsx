@@ -11,6 +11,8 @@ import { useState } from "react";
 const navItems = [
   { href: "/dashboard", label: "Predict" },
   { href: "/history", label: "History" },
+  { href: "/analytics", label: "Analytics" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export function Navbar() {

@@ -2,6 +2,51 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const rateMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_WINDOW = 60_000;
+let lastCleanup = Date.now();
+
+function cleanup() {
+  const now = Date.now();
+  if (now - lastCleanup < 60_000) return;
+  lastCleanup = now;
+  for (const [key, entry] of rateMap) {
+    if (now > entry.resetAt) rateMap.delete(key);
+  }
+}
+
+function checkRateLimit(key: string, limit: number): boolean {
+  cleanup();
+  const now = Date.now();
+  const entry = rateMap.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    rateMap.set(key, { count: 1, resetAt: now + RATE_WINDOW });
+    return true;
+  }
+
+  if (entry.count >= limit) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
+
+const API_RATE_LIMITS: Record<string, number> = {
+  "predictions:POST": 10,
+  "predictions:GET": 30,
+  "feedback:POST": 20,
+  "subscription:POST": 5,
+  "user-analytics:GET": 15,
+  "profile:PATCH": 10,
+  "profile:PUT": 5,
+  "admin-analytics:GET": 10,
+  "admin-users:GET": 20,
+  "admin-predictions:GET": 20,
+  default: 30,
+};
+
 export async function middleware(request: NextRequest) {
   let session;
   try {
@@ -23,7 +68,21 @@ export async function middleware(request: NextRequest) {
   const isPublic = pathname === "/" || pathname.startsWith("/api/health");
   const isAuthApi = pathname.startsWith("/api/auth/");
 
-  if (isPublic || isAuthApi) {
+  if (isPublic) {
+    return NextResponse.next();
+  }
+
+  if (isAuthApi) {
+    if (request.method === "POST") {
+      const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? "unknown";
+      const key = `auth:${ip}`;
+      if (!checkRateLimit(key, 20)) {
+        return NextResponse.json(
+          { error: "Too many requests" },
+          { status: 429, headers: { "Retry-After": "60" } }
+        );
+      }
+    }
     return NextResponse.next();
   }
 
@@ -35,6 +94,16 @@ export async function middleware(request: NextRequest) {
     if (role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? "unknown";
+    const rateKey = `admin:${pathname}:${request.method}:${session.user.id}:${ip}`;
+    if (!checkRateLimit(rateKey, 20)) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": "60" } }
+      );
+    }
+
     return NextResponse.next();
   }
 
@@ -42,6 +111,25 @@ export async function middleware(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? "unknown";
+    const rateKey = `${pathname}:${request.method}:${session.user.id}:${ip}`;
+
+    let routeLimit = API_RATE_LIMITS.default;
+    for (const [pattern, limit] of Object.entries(API_RATE_LIMITS)) {
+      if (pathname.includes(pattern.split(":")[0]) && request.method === pattern.split(":")[1]) {
+        routeLimit = limit;
+        break;
+      }
+    }
+
+    if (!checkRateLimit(rateKey, routeLimit)) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": "60" } }
+      );
+    }
+
     return NextResponse.next();
   }
 

@@ -2,7 +2,7 @@
   "name": "atlas-oracle",
   "version": "0.1.0",
   "private": true,
-  "description": "AI-powered prediction and forecasting tool",
+  "description": "A universal foresight engine for anyone facing any decision",
   "main": "electron/main.js",
   "scripts": {
     "dev": "cd frontend && npm run dev",

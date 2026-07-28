@@ -1,6 +1,8 @@
 import "dotenv/config";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { users } from "@/lib/schema";
 import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 
 async function main() {
   if (process.env.NODE_ENV === "production") {
@@ -11,7 +13,7 @@ async function main() {
   console.log("Seeding database...");
 
   const adminEmail = "admin@atlas-oracle.com";
-  const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
+  const existing = await db.select().from(users).where(eq(users.email, adminEmail)).get();
 
   if (existing) {
     console.log("Admin user already exists.");
@@ -20,14 +22,12 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("admin123", 12);
 
-  await prisma.user.create({
-    data: {
-      name: "Admin",
-      email: adminEmail,
-      password: hashedPassword,
-      role: "ADMIN",
-    },
-  });
+  await db.insert(users).values({
+    name: "Admin",
+    email: adminEmail,
+    password: hashedPassword,
+    role: "ADMIN",
+  }).run();
 
   console.log("Admin user created:");
   console.log("  Email: admin@atlas-oracle.com");
@@ -39,5 +39,4 @@ main()
   .catch((e) => {
     console.error("Seed error:", e);
     process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+  });

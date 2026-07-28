@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { sql as drizzleSql } from "drizzle-orm";
 
 export async function GET() {
   try {
     let dbOk = true;
     try {
-      await prisma.$queryRaw`SELECT 1`;
+      await db.all(drizzleSql`SELECT 1`);
     } catch {
       dbOk = false;
     }

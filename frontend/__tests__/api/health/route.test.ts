@@ -1,17 +1,17 @@
 import { describe, it, expect, vi } from "vitest";
 import { GET } from "@/app/api/health/route";
 
-const mockQueryRaw = vi.fn();
+const mockAll = vi.fn().mockResolvedValue([{ "1": 1 }]);
 
 vi.mock("@/lib/db", () => ({
-  prisma: {
-    $queryRaw: (...args: unknown[]) => mockQueryRaw(...args),
+  db: {
+    all: (...args: unknown[]) => mockAll(...args),
   },
 }));
 
 describe("Health API", () => {
   it("returns ok status", async () => {
-    mockQueryRaw.mockResolvedValue([{ "1": 1 }]);
+    mockAll.mockResolvedValue([{ "1": 1 }]);
     const response = await GET();
     const body = await response.json();
     expect(body.status).toBe("ok");
@@ -20,7 +20,7 @@ describe("Health API", () => {
   });
 
   it("returns a timestamp", async () => {
-    mockQueryRaw.mockResolvedValue([{ "1": 1 }]);
+    mockAll.mockResolvedValue([{ "1": 1 }]);
     const response = await GET();
     const body = await response.json();
     expect(body.timestamp).toBeDefined();
@@ -29,14 +29,14 @@ describe("Health API", () => {
   });
 
   it("returns JSON content type", async () => {
-    mockQueryRaw.mockResolvedValue([{ "1": 1 }]);
+    mockAll.mockResolvedValue([{ "1": 1 }]);
     const response = await GET();
     const headers = Object.fromEntries(response.headers.entries());
     expect(headers["content-type"]).toContain("application/json");
   });
 
   it("returns degraded status when db fails", async () => {
-    mockQueryRaw.mockRejectedValue(new Error("DB down"));
+    mockAll.mockRejectedValue(new Error("DB down"));
     const response = await GET();
     const body = await response.json();
     expect(body.status).toBe("degraded");
