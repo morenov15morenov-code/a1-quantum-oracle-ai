@@ -25,9 +25,6 @@ win:
     - target: nsis
       arch:
         - x64
-    - target: msix
-      arch:
-        - x64
   icon: frontend/assets/icons/icon.png
   artifactName: ${productName}-Setup-${version}.${ext}
 
@@ -58,10 +55,5 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   shortcutName: Atlas Oracle
-
-msix:
-  identityName: com.atlas-oracle.app
-  publisherDisplayName: Atlas Oracle
-  publisher: CN=Atlas Oracle, O=Atlas Oracle, L=Unknown, S=Unknown, C=US
 
 publish: null

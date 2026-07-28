@@ -8,6 +8,12 @@ RUN npm ci
 
 # --- Builder ---
 FROM base AS builder
+ARG DATABASE_URL
+ARG AUTH_SECRET
+ARG NEXT_PUBLIC_APP_URL
+ENV DATABASE_URL=${DATABASE_URL:-file:./prisma/dev.db}
+ENV AUTH_SECRET=${AUTH_SECRET:-local-build-secret-not-for-production}
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
