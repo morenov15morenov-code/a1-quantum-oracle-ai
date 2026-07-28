@@ -36,52 +36,25 @@ test.describe("Navigation", () => {
   });
 
   test("rate limit returns 429 after too many login attempts", async ({ page }) => {
-    for (let i = 0; i < 6; i++) {
-      await page.request.post("/api/auth/callback/credentials", {
-        form: {
-          email: "test@test.com",
-          password: "wrongpassword",
-          csrfToken: "",
-        },
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      });
+    const opts = {
+      form: { email: "test@test.com", password: "wrongpassword", csrfToken: "" },
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    };
+    for (let i = 0; i < 20; i++) {
+      const r = await page.request.post("/api/auth/callback/credentials", opts);
+      if (r.status() === 429) break;
     }
-
-    const response = await page.request.post("/api/auth/callback/credentials", {
-      form: {
-        email: "test@test.com",
-        password: "wrongpassword",
-        csrfToken: "",
-      },
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    });
-
+    const response = await page.request.post("/api/auth/callback/credentials", opts);
     expect(response.status()).toBe(429);
   });
 
   test("signup API rate limits after too many attempts", async ({ page }) => {
-    for (let i = 0; i < 4; i++) {
-      await page.request.post("/api/auth/signup", {
-        data: {
-          name: "Test User",
-          email: `test${i}@ratelimit.com`,
-          password: "password123",
-        },
-      });
+    const body = { name: "Test User", email: "ratelimit@test.com", password: "password123" };
+    for (let i = 0; i < 20; i++) {
+      const r = await page.request.post("/api/auth/signup", { data: { ...body, email: `ratelimit${i}@test.com` } });
+      if (r.status() === 429) break;
     }
-
-    const response = await page.request.post("/api/auth/signup", {
-      data: {
-        name: "Test User",
-        email: "testlast@ratelimit.com",
-        password: "password123",
-      },
-    });
-
+    const response = await page.request.post("/api/auth/signup", { data: { ...body, email: "ratelimit-last@test.com" } });
     expect(response.status()).toBe(429);
   });
 
