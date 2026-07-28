@@ -2,7 +2,7 @@
 
 > A universal foresight engine for anyone facing any decision. Not a market tool. Not a niche app. An oracle for every human question.
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 
 ## Quick Start
 
@@ -15,7 +15,7 @@ npm run dev                  # start dev server on http://localhost:3000
 
 Requires `DATABASE_URL="file:./prisma/dev.db"` in `.env.local` for database commands.
 
-## Current Status: ALL GREEN
+## Current Status: CI IN PROGRESS
 
 | Check | Result |
 |---|---|
@@ -25,12 +25,32 @@ Requires `DATABASE_URL="file:./prisma/dev.db"` in `.env.local` for database comm
 | Next.js build (`npm run build`) | Compiled successfully, 28 routes generated |
 | Prisma → Drizzle Migration | Complete — all routes, tests, and configs updated |
 
+### CI Pipeline History
+
+| Run | Commit | check | e2e | electron-build | docker |
+|---|---|---|---|---|---|
+| #6 | c7fa5de | ✅ | ❌ | ❌ | ❌ |
+| #7 | aa47361 | ✅ | ❌ | ❌ | ❌ |
+| #9 | d8e3fe6 | ⏳ | — | — | 🔧 YAML block scalar fix |
+| #10 | bb7f19a | ⏳ | — | 🚧 Dockerfile CMD fix | 🚧 context fix |
+| #11 | 68f0ea5 | ⏳ queued | 🔧 version→uptime | — | — |
+
+**Known failures**: e2e test expects `uptime` property but health endpoint returns `version` — fixed in #11 (68f0ea5). Electron-build and docker jobs failing since #6 due to path/context issues — fixes in progress across #9–#10.
+
 ## Git History
 
 ```
-HEAD    feat: Prisma to Drizzle ORM migration + Phase 11 features
-...
-7f4202d atlas working version
+68f0ea5 fix: e2e test expects 'version' not 'uptime'
+bb7f19a fix: Dockerfile CMD + electron main.js frontend/ path
+d8e3fe6 fix: YAML folded block scalar for docker build
+a5d84ea fix: Docker build ARGs, remove invalid msix property
+aa47361 fix: electron-build deps, docker build context
+c7fa5de fix: add preact dependency
+a8caeee fix: migrate middleware to proxy (Next.js 16)
+76a7653 fix: build types, lint, Docker/CI for Drizzle
+5447918 merge: remove prisma.config.ts
+446d35b feat: Prisma → Drizzle ORM + Phase 11 + all tests
+...7f4202d atlas working version
 ```
 
 ## What Was Done (11 Phases Complete)
@@ -152,3 +172,25 @@ npm start
 2. Create GitHub OAuth app at https://github.com/settings/developers
 3. Set callback URLs to `{NEXT_PUBLIC_APP_URL}/api/auth/callback/{provider}`
 4. Add client ID and secret to environment variables
+
+## Full Commit Log
+
+```
+68f0ea5 fix: e2e test expects 'version' not 'uptime' (matches health endpoint response)
+bb7f19a fix: Dockerfile CMD use frontend/server.js, electron main.js use frontend/ path (standalone output has frontend/ prefix due to outputFileTracingRoot)
+d8e3fe6 fix: use YAML folded block scalar for docker build command (no shell continuations)
+a5d84ea fix: add Docker build ARGs for env, remove invalid electron-builder msix property
+aa47361 fix: electron-build root deps use npm install, docker build context frontend/
+c7fa5de fix: add preact dependency (needed by next-auth v5 beta, dropped by merge conflict)
+a8caeee fix: migrate middleware.ts to proxy.ts (Next.js 16 deprecation)
+76a7653 fix: build type errors, lint warnings, Docker/CI config for Drizzle
+5447918 merge: remove obsolete prisma.config.ts (replaced by drizzle.config.ts)
+446d35b feat: Prisma to Drizzle ORM migration + Phase 11 features + all tests passing
+1768c2d fix: resolve build issues for deployment
+2d9b6c2 fix: whitelist /api/auth/* routes in middleware
+5077362 fix: resolve React 19 lint errors (set-state-in-effect, hydration toggle)
+494e233 feat: production hardening - security, accessibility, observability, and test fixes
+69582b8 feat: consolidate into frontend/, add Vercel & Docker deployment support
+d848ce0 fix layout for deployment
+7f4202d atlas working version
+```

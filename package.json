@@ -2,6 +2,7 @@
   "name": "atlas-oracle",
   "version": "0.1.0",
   "private": true,
+  "author": "Atlas Oracle Team",
   "description": "A universal foresight engine for anyone facing any decision",
   "main": "electron/main.js",
   "scripts": {

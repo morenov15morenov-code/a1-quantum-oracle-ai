@@ -123,6 +123,10 @@ jobs:
             -e AUTH_SECRET="ci-test-secret" \
             -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
             atlas-oracle:latest
-          sleep 10
+          for i in $(seq 1 12); do \
+            curl -sf http://localhost:3000/api/health && break; \
+            echo "Waiting for server... attempt $i"; \
+            sleep 5; \
+          done; \
           curl -f http://localhost:3000/api/health || exit 1
-          docker stop atlas-test
+          docker stop atlas-test; docker rm atlas-test

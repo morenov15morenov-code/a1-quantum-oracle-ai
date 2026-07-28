@@ -8,7 +8,7 @@ let mainWindow;
 let serverProcess;
 
 function startServer() {
-  const serverPath = path.join(process.resourcesPath, "app", "next-standalone", "frontend", "server.js");
+  const serverPath = path.join(process.resourcesPath, "app", "next-standalone", "server.js");
   serverProcess = spawn(process.execPath, [serverPath], {
     env: { ...process.env, PORT: "3001", NODE_ENV: "production" },
     stdio: ["pipe", "pipe", "pipe"],
