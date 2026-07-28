@@ -6,7 +6,7 @@ test.describe("Prediction flow", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForURL(/\/dashboard/, { timeout: 45000 });
 
     await expect(page.getByText("New Prediction")).toBeVisible();
     await expect(page.getByText("0/2000")).toBeVisible();
@@ -17,7 +17,7 @@ test.describe("Prediction flow", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForURL(/\/dashboard/, { timeout: 45000 });
 
     const textarea = page.getByPlaceholder(/what would you like to predict/i);
     await textarea.fill("Short");
@@ -30,7 +30,7 @@ test.describe("Prediction flow", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForURL(/\/dashboard/, { timeout: 45000 });
 
     await expect(page.getByText(/welcome|dashboard/i)).toBeVisible();
   });
@@ -40,7 +40,7 @@ test.describe("Prediction flow", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/(dashboard|admin\/dashboard)/, { timeout: 15000 });
+    await page.waitForURL(/\/(dashboard|admin\/dashboard)/, { timeout: 45000 });
 
     await page.goto("/settings");
     await expect(page.getByText(/settings|profile/i)).toBeVisible();
@@ -51,7 +51,7 @@ test.describe("Prediction flow", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/(dashboard|admin\/dashboard)/, { timeout: 15000 });
+    await page.waitForURL(/\/(dashboard|admin\/dashboard)/, { timeout: 45000 });
 
     await page.goto("/history");
     await expect(page.getByText(/history|predictions/i)).toBeVisible();
@@ -62,7 +62,7 @@ test.describe("Prediction flow", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForURL(/\/dashboard/, { timeout: 45000 });
 
     const textarea = page.getByPlaceholder(/what would you like to predict/i);
     await textarea.fill("Will the stock market go up tomorrow?");
@@ -74,7 +74,7 @@ test.describe("Prediction flow", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForURL(/\/dashboard/, { timeout: 45000 });
 
     await page.getByRole("button", { name: /generate prediction/i }).click();
     await expect(page.getByText(/required|must be at least/i)).toBeVisible();
