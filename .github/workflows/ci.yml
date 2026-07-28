@@ -95,7 +95,14 @@ jobs:
           AUTH_SECRET: "ci-test-secret"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
       - name: Build Electron (Linux)
-        run: npx electron-builder --linux --config electron-builder.yml
+        run: |
+          node node_modules/electron-builder/cli.js --linux --config electron-builder.yml > /tmp/eb-output.txt 2>&1; EC=$?
+          echo "Electron build output:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          head -100 /tmp/eb-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Exit code: $EC" >> $GITHUB_STEP_SUMMARY
+          exit $EC
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

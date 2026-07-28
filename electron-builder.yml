@@ -1,6 +1,7 @@
 appId: com.atlas-oracle.app
 productName: Atlas Oracle
 copyright: Copyright © 2026 Atlas Oracle
+npmRebuild: false
 
 directories:
   output: release
