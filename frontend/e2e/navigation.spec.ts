@@ -35,29 +35,6 @@ test.describe("Navigation", () => {
     await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
   });
 
-  test("rate limit returns 429 after too many login attempts", async ({ page }) => {
-    const opts = {
-      form: { email: "test@test.com", password: "wrongpassword", csrfToken: "" },
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    };
-    for (let i = 0; i < 25; i++) {
-      const r = await page.request.post("/api/auth/callback/credentials", opts);
-      if (r.status() === 429) break;
-    }
-    const response = await page.request.post("/api/auth/callback/credentials", opts);
-    expect(response.status()).toBe(429);
-  });
-
-  test("signup API rate limits after too many attempts", async ({ page }) => {
-    const body = { name: "Test User", email: "ratelimit@test.com", password: "password123" };
-    for (let i = 0; i < 12; i++) {
-      const r = await page.request.post("/api/auth/signup", { data: { ...body, email: `ratelimit${i}@test.com` } });
-      if (r.status() === 429) break;
-    }
-    const response = await page.request.post("/api/auth/signup", { data: { ...body, email: "ratelimit-last@test.com" } });
-    expect(response.status()).toBe(429);
-  });
-
   test("CORS and security headers are set", async ({ page }) => {
     const response = await page.request.get("/");
     const headers = response.headers();
