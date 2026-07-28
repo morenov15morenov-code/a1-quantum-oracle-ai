@@ -110,10 +110,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
-        run: docker build -f frontend/Dockerfile -t atlas-oracle:latest \
-          --build-arg DATABASE_URL="file:./prisma/dev.db" \
-          --build-arg AUTH_SECRET="ci-test-secret" \
-          --build-arg NEXT_PUBLIC_APP_URL="http://localhost:3000" \
+        run: >-
+          docker build -f frontend/Dockerfile -t atlas-oracle:latest
+          --build-arg DATABASE_URL="file:./prisma/dev.db"
+          --build-arg AUTH_SECRET="ci-test-secret"
+          --build-arg NEXT_PUBLIC_APP_URL="http://localhost:3000"
           frontend/
       - name: Test Docker health check
         run: |
