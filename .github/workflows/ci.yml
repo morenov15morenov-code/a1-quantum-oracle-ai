@@ -99,12 +99,20 @@ jobs:
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
       - name: Build Electron (Linux)
         run: |
-          node node_modules/electron-builder/cli.js --linux --config electron-builder.yml > /tmp/eb-output.txt 2>&1; EC=$?
-          echo "Electron build output:" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          head -100 /tmp/eb-output.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "Exit code: $EC" >> $GITHUB_STEP_SUMMARY
+          echo "=== Diagnostics ==="
+          echo "Node: $(node -v)"; npm -v
+          echo "Standalone dir:"; ls -la frontend/.next/standalone/ 2>/dev/null || echo "NOT FOUND"
+          echo "Root node_modules/electron-builder:"; ls node_modules/electron-builder/cli.js 2>/dev/null || echo "NOT FOUND"
+          echo "Root node_modules/electron:"; ls node_modules/electron/ 2>/dev/null | head -5 || echo "NOT FOUND"
+          echo "=== Running electron-builder ==="
+          node node_modules/electron-builder/cli.js --linux --config electron-builder.yml 2>&1 | tee /tmp/eb-output.txt; EC=$?
+          {
+            echo "=== Electron build output ==="
+            echo '```'
+            cat /tmp/eb-output.txt
+            echo '```'
+            echo "Exit code: $EC"
+          } >> "$GITHUB_STEP_SUMMARY"
           exit $EC
       - name: Upload artifact
         uses: actions/upload-artifact@v4
