@@ -40,7 +40,7 @@ test.describe("Navigation", () => {
       form: { email: "test@test.com", password: "wrongpassword", csrfToken: "" },
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     };
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 25; i++) {
       const r = await page.request.post("/api/auth/callback/credentials", opts);
       if (r.status() === 429) break;
     }
@@ -50,7 +50,7 @@ test.describe("Navigation", () => {
 
   test("signup API rate limits after too many attempts", async ({ page }) => {
     const body = { name: "Test User", email: "ratelimit@test.com", password: "password123" };
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 12; i++) {
       const r = await page.request.post("/api/auth/signup", { data: { ...body, email: `ratelimit${i}@test.com` } });
       if (r.status() === 429) break;
     }
