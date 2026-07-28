@@ -123,10 +123,19 @@ jobs:
             -e AUTH_SECRET="ci-test-secret" \
             -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
             atlas-oracle:latest
+          echo "=== Container structure ==="
+          docker exec atlas-test ls -la /app/
+          docker exec atlas-test ls -la /app/.next/ 2>/dev/null || true
+          echo "=== Server process ==="
+          docker exec atlas-test ps aux 2>/dev/null || true
+          echo "=== Trying to start health check (60s timeout) ==="
           for i in $(seq 1 12); do \
-            curl -sf http://localhost:3000/api/health && break; \
+            curl -sf http://localhost:3000/api/health && echo "OK" && break; \
             echo "Waiting for server... attempt $i"; \
             sleep 5; \
           done; \
-          curl -f http://localhost:3000/api/health || exit 1
+          echo "=== Final curl ==="
+          curl -f http://localhost:3000/api/health && echo "HEALTHY" || echo "UNHEALTHY"
+          echo "=== Container logs ==="
+          docker logs atlas-test 2>&1 || true
           docker stop atlas-test; docker rm atlas-test

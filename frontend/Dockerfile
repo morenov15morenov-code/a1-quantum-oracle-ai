@@ -33,9 +33,12 @@ RUN adduser --system --uid 1001 nextjs
 # Install drizzle-kit for schema push at startup
 RUN npm install -g drizzle-kit@^0.31.10
 
+# Copy build output and runtime deps
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/next.config.ts ./next.config.ts
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder /app/lib/schema.ts ./lib/schema.ts
 COPY --from=builder /app/scripts ./scripts
@@ -49,4 +52,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-CMD sh -c "mkdir -p /app/prisma && drizzle-kit push --config=drizzle.config.ts 2>/dev/null || true && node server.js"
+CMD sh -c "mkdir -p /app/prisma && drizzle-kit push --config=drizzle.config.ts 2>/dev/null || true && npx next start"
