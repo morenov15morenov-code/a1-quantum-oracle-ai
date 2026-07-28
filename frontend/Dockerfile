@@ -49,4 +49,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-CMD sh -c "mkdir -p /app/prisma && drizzle-kit push --config=drizzle.config.ts 2>/dev/null || true && node server.js"
+CMD sh -c "mkdir -p /app/prisma && drizzle-kit push --config=drizzle.config.ts 2>/dev/null || true && node frontend/server.js"
