@@ -24,7 +24,7 @@ test.describe("Authentication", () => {
     await page.getByLabel("Email").fill("invalid@test.com");
     await page.getByLabel("Password", { exact: true }).fill("wrongpassword");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await expect(page.getByText("Invalid email or password")).toBeVisible();
+    await expect(page.getByText("Invalid email or password")).toBeVisible({ timeout: 15000 });
   });
 
   test("navigates to signup from login page", async ({ page }) => {

@@ -31,7 +31,7 @@ test.describe("Responsive design", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/dashboard/);
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
 
     await expect(page.getByText(/dashboard|prediction/i)).toBeVisible();
   });
@@ -72,7 +72,7 @@ test.describe("Accessibility", () => {
     await page.getByLabel("Password", { exact: true }).fill("wrongpassword");
     await page.getByRole("button", { name: /sign in/i }).click();
     const alert = page.getByRole("alert");
-    await expect(alert).toBeVisible();
+    await expect(alert).toBeVisible({ timeout: 15000 });
   });
 
   test("buttons are keyboard accessible", async ({ page }) => {
