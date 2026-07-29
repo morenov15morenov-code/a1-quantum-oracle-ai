@@ -6,7 +6,7 @@ test.describe("Admin flow", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/(dashboard|admin\/dashboard)/, { timeout: 15000 });
+    await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
 
     if (page.url().includes("/admin")) {
       await expect(page.getByText(/admin|dashboard/i)).toBeVisible();
@@ -18,7 +18,7 @@ test.describe("Admin flow", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/(dashboard|admin\/dashboard)/, { timeout: 15000 });
+    await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
 
     await page.goto("/admin/users");
     const url = page.url();
@@ -31,7 +31,7 @@ test.describe("Admin flow", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/(dashboard|admin\/dashboard)/, { timeout: 15000 });
+    await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
 
     await page.goto("/admin/dashboard");
     const url = page.url();
@@ -46,7 +46,7 @@ test.describe("Admin flow", () => {
     await page.getByLabel("Password", { exact: true }).fill("password123");
     await page.getByLabel("Confirm Password").fill("password123");
     await page.getByRole("button", { name: /create account/i }).click();
-    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForURL(/\/dashboard/);
 
     await page.goto("/admin/dashboard");
     await expect(page).toHaveURL(/\/dashboard/);
@@ -105,7 +105,7 @@ test.describe("Settings page", () => {
     await page.getByLabel("Email").fill("admin@atlas-oracle.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await page.waitForURL(/\/(dashboard|admin\/dashboard)/, { timeout: 15000 });
+    await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
 
     await page.goto("/settings");
     await expect(page.getByText(/settings|profile|account/i)).toBeVisible();

@@ -61,28 +61,7 @@ jobs:
         env:
           DATABASE_URL: "file:./prisma/dev.db"
       - name: Run E2E tests
-        run: |
-          cd frontend
-          npx next dev -p 3000 &
-          NEXT_PID=$!
-          for i in $(seq 1 60); do
-            if curl -s -o /dev/null http://localhost:3000/login 2>/dev/null; then
-              echo "Server ready"
-              break
-            fi
-            sleep 2
-          done
-          echo "Warming up API routes..."
-          curl -s -o /dev/null -X POST http://localhost:3000/api/auth/callback/credentials \
-            -d "email=warmup@test.com&password=wrong&csrfToken=test&callbackUrl=/dashboard&json=true" &
-          curl -s -o /dev/null -X POST http://localhost:3000/api/auth/signup \
-            -d "email=warmup@test.com&password=Test123!&name=Warmup&redirect=false" &
-          curl -s -o /dev/null -X POST http://localhost:3000/api/auth/request-reset \
-            -d "email=warmup@test.com" &
-          wait
-          echo "Warmup complete, running tests..."
-          npx playwright test
-          kill $NEXT_PID 2>/dev/null || true
+        run: cd frontend && npx playwright test
         env:
           DATABASE_URL: "file:./prisma/dev.db"
           AUTH_SECRET: "ci-test-secret-not-for-production"
