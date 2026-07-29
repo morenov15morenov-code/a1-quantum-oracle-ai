@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -57,14 +56,13 @@ async function signupAction(_prev: FormState, formData: FormData): Promise<FormS
 }
 
 export function SignupForm() {
-  const router = useRouter();
   const [state, formAction, pending] = useActionState(signupAction, {});
 
   useEffect(() => {
     if (state?.success) {
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     }
-  }, [state?.success, router]);
+  }, [state?.success]);
 
   return (
     <Card className="w-full max-w-md">

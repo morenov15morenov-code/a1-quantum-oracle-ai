@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -41,15 +41,14 @@ async function loginAction(_prev: FormState, formData: FormData): Promise<FormSt
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const [state, formAction, pending] = useActionState(loginAction, {});
 
   useEffect(() => {
     if (state?.success) {
-      router.push(callbackUrl);
+      window.location.href = callbackUrl;
     }
-  }, [state?.success, callbackUrl, router]);
+  }, [state?.success, callbackUrl]);
 
   return (
     <Card className="w-full max-w-md">

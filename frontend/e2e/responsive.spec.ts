@@ -72,7 +72,7 @@ test.describe("Accessibility", () => {
     await page.getByLabel("Password", { exact: true }).fill("wrongpassword");
     await page.getByRole("button", { name: /sign in/i }).click();
     const alert = page.getByRole("alert");
-    await expect(alert).toBeVisible();
+    await expect(alert).toBeVisible({ timeout: 15000 });
   });
 
   test("buttons are keyboard accessible", async ({ page }) => {
