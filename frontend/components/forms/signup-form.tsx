@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -9,60 +9,61 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { signupSchema } from "@/lib/validations";
 
-interface FormState {
-  error?: string;
-  success?: boolean;
-}
-
-async function signupAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const data = {
-    name: formData.get("name") as string,
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-    confirmPassword: formData.get("confirmPassword") as string,
-  };
-
-  const parsed = signupSchema.safeParse(data);
-  if (!parsed.success) {
-      return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
-  }
-
-  try {
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: data.name, email: data.email, password: data.password }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      return { error: err.error ?? "Failed to create account" };
-    }
-
-    const signInResult = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
-
-    if (signInResult?.error) {
-      return { error: "Account created but sign-in failed. Please try logging in." };
-    }
-
-    return { success: true };
-  } catch {
-    return { error: "Something went wrong. Please try again." };
-  }
-}
-
 export function SignupForm() {
-  const [state, formAction, pending] = useActionState(signupAction, {});
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
-  useEffect(() => {
-    if (state?.success) {
-      window.location.href = "/dashboard";
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      password: formData.get("password") as string,
+      confirmPassword: formData.get("confirmPassword") as string,
+    };
+
+    const parsed = signupSchema.safeParse(data);
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Invalid input");
+      setPending(false);
+      return;
     }
-  }, [state?.success]);
+
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: data.name, email: data.email, password: data.password }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        setError(err.error ?? "Failed to create account");
+        setPending(false);
+        return;
+      }
+
+      const signInResult = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        setError("Account created but sign-in failed. Please try logging in.");
+      } else {
+        window.location.href = "/dashboard";
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
     <Card className="w-full max-w-md">
@@ -107,10 +108,10 @@ export function SignupForm() {
           </div>
         </div>
 
-        <form action={formAction} className="space-y-4">
-          {state?.error && (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
             <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" role="alert" aria-live="polite">
-              {state.error}
+              {error}
             </div>
           )}
 
