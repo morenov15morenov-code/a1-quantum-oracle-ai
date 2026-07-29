@@ -88,7 +88,7 @@ export async function proxy(request: NextRequest) {
 
   if (isAdminApiRoute) {
     if (!session?.user) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const role = (session.user as { role: string })?.role;
     if (role !== "ADMIN") {
