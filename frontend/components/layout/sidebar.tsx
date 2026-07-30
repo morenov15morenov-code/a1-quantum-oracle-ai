@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from "react";
 
 const sidebarItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "chart" },
+  { href: "/admin/projection", label: "Projection", icon: "projection" },
   { href: "/admin/users", label: "Users", icon: "users" },
   { href: "/admin/predictions", label: "Predictions", icon: "predictions" },
   { href: "/admin/settings", label: "Settings", icon: "settings" },
@@ -32,6 +33,12 @@ function SidebarIcon({ icon }: { icon: string }) {
       return (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      );
+    case "projection":
+      return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
         </svg>
       );
     case "settings":
