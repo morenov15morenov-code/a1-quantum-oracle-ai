@@ -34,6 +34,8 @@ export default function ProjectionPage() {
         <Card value={`${last.margin}%`} label="Month 12 Margin" />
       </div>
 
+      <ProfitChart months={data.months} />
+
       <div className="rounded-xl border">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -101,6 +103,40 @@ function Card({ value, label }: { value: string; label: string }) {
     <div className="rounded-xl border p-4">
       <p className="text-2xl font-bold">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function ProfitChart({ months }: { months: { label: string; grossProfit: number; cumulativeProfit: number }[] }) {
+  const max = Math.max(...months.map((m) => Math.max(m.grossProfit, m.cumulativeProfit, 1)));
+  const barW = Math.max(8, Math.min(40, 680 / months.length));
+  const gap = 4;
+
+  return (
+    <div className="rounded-xl border p-4">
+      <h3 className="mb-3 text-sm font-medium text-muted-foreground">Monthly Profit</h3>
+      <svg viewBox="0 0 700 200" className="w-full" role="img" aria-label="Monthly profit bar chart">
+        {months.map((m, i) => {
+          const x = i * (barW * 2 + gap) + 20;
+          const barH = (Math.abs(m.grossProfit) / max) * 160;
+          const y = m.grossProfit >= 0 ? 180 - barH : 180;
+          const cumBarH = (Math.abs(m.cumulativeProfit) / max) * 160;
+          const cumY = m.cumulativeProfit >= 0 ? 180 - cumBarH : 180;
+          return (
+            <g key={m.label}>
+              <rect x={x} y={y} width={barW} height={Math.max(barH, 1)} fill={m.grossProfit >= 0 ? "#22c55e" : "#ef4444"} rx={2} />
+              <rect x={x + barW + gap} y={cumY} width={barW} height={Math.max(cumBarH, 1)} fill="#3b82f6" rx={2} opacity={0.7} />
+              {i % 2 === 0 && <text x={x + barW + gap / 2} y="195" textAnchor="middle" className="fill-muted-foreground" fontSize="8">{m.label}</text>}
+            </g>
+          );
+        })}
+        <text x="15" y="12" className="fill-muted-foreground" fontSize="9">$</text>
+        <line x1="20" y1="180" x2="700" y2="180" stroke="currentColor" strokeWidth="1" opacity="0.3" />
+      </svg>
+      <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+        <span><span className="inline-block h-2 w-3 rounded bg-green-500 align-middle" /> Monthly Profit</span>
+        <span><span className="inline-block h-2 w-3 rounded bg-blue-500 align-middle opacity-70" /> Cumulative Profit</span>
+      </div>
     </div>
   );
 }
