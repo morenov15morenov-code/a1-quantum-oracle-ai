@@ -29,6 +29,7 @@ describe("Sidebar", () => {
   it("renders all navigation items", () => {
     render(<Sidebar />);
     expect(screen.getByText("Dashboard")).toBeDefined();
+    expect(screen.getByText("Projection")).toBeDefined();
     expect(screen.getByText("Users")).toBeDefined();
     expect(screen.getByText("Predictions")).toBeDefined();
     expect(screen.getByText("Settings")).toBeDefined();
@@ -37,6 +38,7 @@ describe("Sidebar", () => {
   it("links to correct admin paths", () => {
     render(<Sidebar />);
     expect(screen.getByText("Dashboard").closest("a")?.getAttribute("href")).toBe("/admin/dashboard");
+    expect(screen.getByText("Projection").closest("a")?.getAttribute("href")).toBe("/admin/projection");
     expect(screen.getByText("Users").closest("a")?.getAttribute("href")).toBe("/admin/users");
     expect(screen.getByText("Predictions").closest("a")?.getAttribute("href")).toBe("/admin/predictions");
     expect(screen.getByText("Settings").closest("a")?.getAttribute("href")).toBe("/admin/settings");
