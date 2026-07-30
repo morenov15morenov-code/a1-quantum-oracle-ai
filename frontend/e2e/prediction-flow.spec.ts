@@ -8,7 +8,7 @@ test.describe("Prediction flow", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
 
-    await expect(page.getByText("New Prediction")).toBeVisible();
+    await expect(page.getByText("Consult the Oracle")).toBeVisible();
     await expect(page.getByText("0/2000")).toBeVisible();
   });
 
@@ -19,9 +19,9 @@ test.describe("Prediction flow", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
 
-    const textarea = page.getByPlaceholder(/what would you like to predict/i);
+    const textarea = page.getByPlaceholder(/what do you want to know/i);
     await textarea.fill("Short");
-    await page.getByRole("button", { name: /generate prediction/i }).click();
+    await page.getByRole("button", { name: /get prediction/i }).click();
     await expect(page.getByText("Question must be at least 10 characters")).toBeVisible();
   });
 
@@ -64,7 +64,7 @@ test.describe("Prediction flow", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
 
-    const textarea = page.getByPlaceholder(/what would you like to predict/i);
+    const textarea = page.getByPlaceholder(/what do you want to know/i);
     await textarea.fill("Will the stock market go up tomorrow?");
     await expect(page.getByText("37/2000")).toBeVisible();
   });
@@ -76,9 +76,9 @@ test.describe("Prediction flow", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
 
-    const textarea = page.getByPlaceholder(/what would you like to predict/i);
+    const textarea = page.getByPlaceholder(/what do you want to know/i);
     await textarea.fill("a");
-    await page.getByRole("button", { name: /generate prediction/i }).click();
+    await page.getByRole("button", { name: /get prediction/i }).click();
     await expect(page.getByText("Question must be at least 10 characters")).toBeVisible();
   });
 });
