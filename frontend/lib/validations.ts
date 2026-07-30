@@ -23,6 +23,14 @@ export const signupServerSchema = z.object({
 
 export const predictionSchema = z.object({
   input: z.string().min(10, "Question must be at least 10 characters").max(2000, "Question too long"),
+  context: z.string().max(5000, "Context too long").optional(),
+  domainCategory: z.string().max(100, "Domain too long").optional(),
+});
+
+export const oracleQuerySchema = z.object({
+  input: z.string().min(10, "Question must be at least 10 characters").max(2000, "Question too long"),
+  context: z.string().max(5000, "Context too long").optional(),
+  domainCategory: z.string().max(100, "Domain too long").optional(),
 });
 
 export const feedbackSchema = z.object({

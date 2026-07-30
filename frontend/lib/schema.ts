@@ -28,6 +28,10 @@ export const predictions = sqliteTable("Prediction", {
   model: text("model").notNull().default("gpt-4o"),
   tokensIn: integer("tokensIn"),
   tokensOut: integer("tokensOut"),
+  shareSlug: text("shareSlug"),
+  context: text("context"),
+  domainCategory: text("domainCategory"),
+  outcomeStatus: text("outcomeStatus"),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
 });
 

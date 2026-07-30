@@ -1,4 +1,4 @@
-interface PredictionResult {
+export interface PredictionResult {
   result: string;
   confidence: number;
   reasoning: string;
@@ -39,7 +39,7 @@ function generateMockPrediction(input: string): PredictionResult {
   return mockResults[index];
 }
 
-export async function generatePrediction(input: string): Promise<PredictionResult> {
+export async function generatePrediction(input: string, systemPrompt?: string): Promise<PredictionResult> {
   const useMock = !process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "sk-your-openai-api-key";
 
   if (useMock) {
@@ -56,7 +56,7 @@ export async function generatePrediction(input: string): Promise<PredictionResul
       messages: [
         {
           role: "system",
-          content: "You are an AI prediction and forecasting assistant. For each query, provide:\n1. A clear prediction/forecast\n2. A confidence score (0-1)\n3. Your reasoning\nRespond in JSON format: { \"result\": \"...\", \"confidence\": 0.XX, \"reasoning\": \"...\" }",
+          content: systemPrompt || "You are an AI prediction and forecasting assistant. For each query, provide:\n1. A clear prediction/forecast\n2. A confidence score (0-1)\n3. Your reasoning\nRespond in JSON format: { \"result\": \"...\", \"confidence\": 0.XX, \"reasoning\": \"...\" }",
         },
         { role: "user", content: input },
       ],

@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { predictions, subscriptions, analyticsEvents } from "@/lib/schema";
-import { generatePrediction } from "@/lib/ai";
-import { predictionSchema } from "@/lib/validations";
+import { queryOracle } from "@/lib/oracle";
+import { oracleQuerySchema } from "@/lib/validations";
 import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
 import { parsePagination, paginationError } from "@/lib/pagination";
 import { eq, sql } from "drizzle-orm";
@@ -46,23 +46,25 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const parsed = predictionSchema.safeParse(body);
+    const parsed = oracleQuerySchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
-    const { input } = parsed.data;
-    const aiResult = await generatePrediction(input);
+    const { input, context, domainCategory } = parsed.data;
+    const oracleResult = await queryOracle({ input, context, domainCategory });
 
     const prediction = await db.insert(predictions).values({
       userId: session.user.id,
       input,
-      result: aiResult.result,
-      confidence: aiResult.confidence,
-      reasoning: aiResult.reasoning,
+      context: context || null,
+      domainCategory: domainCategory || null,
+      result: oracleResult.result,
+      confidence: oracleResult.confidence,
+      reasoning: oracleResult.reasoning,
       model: process.env.OPENAI_API_KEY ? "gpt-4o" : "mock",
-      tokensIn: aiResult.tokensIn ?? null,
-      tokensOut: aiResult.tokensOut ?? null,
+      tokensIn: oracleResult.tokensIn ?? null,
+      tokensOut: oracleResult.tokensOut ?? null,
     }).returning().get();
 
     await db.update(subscriptions)
