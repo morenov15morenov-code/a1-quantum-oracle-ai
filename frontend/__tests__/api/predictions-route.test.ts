@@ -2,14 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST, GET } from "@/app/api/predictions/route";
 
 vi.mock("@/lib/auth", () => ({ auth: vi.fn() }));
-vi.mock("@/lib/ai", () => ({ generatePrediction: vi.fn() }));
+vi.mock("@/lib/oracle", () => ({ queryOracle: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({
   rateLimit: vi.fn().mockReturnValue({ success: true, remaining: 9 }),
   getRateLimitHeaders: vi.fn().mockReturnValue({}),
 }));
 
 const mockAuth = vi.mocked(await import("@/lib/auth")).auth;
-const mockAi = vi.mocked(await import("@/lib/ai")).generatePrediction;
+const mockOracle = vi.mocked(await import("@/lib/oracle")).queryOracle;
 
 const { dbMock } = vi.hoisted(() => ({
   dbMock: { select: vi.fn(), insert: vi.fn(), update: vi.fn() },
@@ -61,7 +61,7 @@ describe("Predictions API - POST", () => {
   });
 
   it("creates prediction with valid input", async () => {
-    mockAi.mockResolvedValue({ result: "The forecast looks promising.", confidence: 0.85, reasoning: "Based on current trends." });
+    mockOracle.mockResolvedValue({ result: "The forecast looks promising.", confidence: 0.85, reasoning: "Based on current trends." });
     dbMock.select.mockReturnValue(selectChain({ ...subData, periodEnd: null }));
     dbMock.insert
       .mockReturnValueOnce(insertChain({ id: "pred-1", userId: "user-1", input: "What will happen next quarter?", result: "The forecast looks promising.", confidence: 0.85, reasoning: "Based on current trends.", model: "mock" }))
@@ -87,14 +87,14 @@ describe("Predictions API - POST", () => {
   });
 
   it("handles AI errors gracefully", async () => {
-    mockAi.mockRejectedValue(new Error("AI error"));
+    mockOracle.mockRejectedValue(new Error("AI error"));
     dbMock.select.mockReturnValue(selectChain({ ...subData, periodEnd: null }));
     const response = await POST(createAuthRequest({ input: "What will happen next quarter?" }));
     expect(response.status).toBe(500);
   });
 
   it("logs prediction created event", async () => {
-    mockAi.mockResolvedValue({ result: "Forecast result", confidence: 0.7, reasoning: "Reasoning" });
+    mockOracle.mockResolvedValue({ result: "Forecast result", confidence: 0.7, reasoning: "Reasoning" });
     dbMock.select.mockReturnValue(selectChain({ ...subData, periodEnd: null }));
     const analyticsMock = insertChain(undefined);
     dbMock.insert
@@ -114,7 +114,7 @@ describe("Predictions API - POST", () => {
 
   it("allows pro users to create predictions", async () => {
     dbMock.select.mockReturnValue(selectChain({ ...subData, tier: "PRO", predsUsed: 95, predsLimit: 100, periodEnd: null }));
-    mockAi.mockResolvedValue({ result: "Forecast result", confidence: 0.7, reasoning: "Reasoning" });
+    mockOracle.mockResolvedValue({ result: "Forecast result", confidence: 0.7, reasoning: "Reasoning" });
     dbMock.insert
       .mockReturnValueOnce(insertChain({ id: "pred-1" }))
       .mockReturnValueOnce(insertChain(undefined));

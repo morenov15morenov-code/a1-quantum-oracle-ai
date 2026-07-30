@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { ProjectionResult, ProjectionInput } from "@/lib/projection";
-import { calculateProjection } from "@/lib/projection";
 
 const DEFAULT_INPUTS: ProjectionInput = {
   currentUsers: 50,
