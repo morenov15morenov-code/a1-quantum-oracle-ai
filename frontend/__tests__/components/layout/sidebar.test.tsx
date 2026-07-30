@@ -72,6 +72,6 @@ describe("Sidebar", () => {
     render(<Sidebar />);
     const navLinks = screen.getByRole("navigation", { name: "Admin navigation" });
     const svgs = navLinks.querySelectorAll("svg");
-    expect(svgs.length).toBe(4);
+    expect(svgs.length).toBe(5);
   });
 });
