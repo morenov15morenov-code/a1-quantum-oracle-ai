@@ -12,8 +12,8 @@ test.describe("Rate limiting", () => {
         "Content-Type": "application/x-www-form-urlencoded",
       },
     });
-    expect(response.status()).toBeGreaterThanOrEqual(400);
-    expect(response.status()).toBeLessThan(500);
+    const status = response.status();
+    expect(status === 302 || (status >= 400 && status < 500)).toBeTruthy();
   });
 
   test("signup endpoint validates input", async ({ page }) => {

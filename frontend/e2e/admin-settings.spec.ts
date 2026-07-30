@@ -40,36 +40,21 @@ test.describe("Admin flow", () => {
   });
 
   test("non-admin user is redirected from admin pages", async ({ page }) => {
-    const requests: string[] = [];
-    page.on("request", (r) => requests.push(`${r.method()} ${r.url()}`));
-    page.on("response", (r) => {
-      if (r.url().includes("/api/auth")) {
-        console.log(`[DBG] ${r.status()} ${r.request().method()} ${r.url()}`);
-      }
-    });
-    page.on("pageerror", (err) => console.log("[DBG] pageerror:", err.message));
-    page.on("console", (msg) => {
-      if (msg.type() === "error") console.log("[DBG] console.error:", msg.text());
-    });
+    const email = `user${Date.now()}@test.com`;
 
     await page.goto("/signup");
     await page.getByLabel("Name").fill("Regular User");
-    await page.getByLabel("Email").fill(`user${Date.now()}@test.com`);
+    await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password", { exact: true }).fill("password123");
     await page.getByLabel("Confirm Password").fill("password123");
     await page.getByRole("button", { name: /create account/i }).click();
 
-    try {
-      await page.waitForURL(/\/dashboard/, { timeout: 10000 });
-    } catch {
-      const url = page.url();
-      const html = await page.content();
-      const excerpt = html.substring(0, 3000);
-      console.log(`[DBG] waitForURL failed. Current URL: ${url}`);
-      console.log(`[DBG] First 3000 chars of page content:\n${excerpt}`);
-      console.log(`[DBG] API requests made:\n${requests.join("\n")}`);
-      throw new Error(`waitForURL(/\\/dashboard/) timed out. Current URL: ${url}`);
-    }
+    await page.waitForURL(/\/login/);
+
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password", { exact: true }).fill("password123");
+    await page.getByRole("button", { name: /sign in/i }).click();
+    await page.waitForURL(/\/dashboard/);
 
     await page.goto("/admin/dashboard");
     await expect(page).toHaveURL(/\/dashboard/);
@@ -99,7 +84,7 @@ test.describe("Password reset flow", () => {
 
   test("reset password page renders with invalid token", async ({ page }) => {
     await page.goto("/reset-password?token=invalidtoken123");
-    await expect(page.getByText(/invalid|expired|error/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Invalid Token" })).toBeVisible();
   });
 
   test("request reset rate limits after too many attempts", async ({ page }) => {

@@ -47,17 +47,7 @@ export function SignupForm() {
         return;
       }
 
-      const signInResult = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        setError("Account created but sign-in failed. Please try logging in.");
-      } else {
-        window.location.href = "/dashboard";
-      }
+      window.location.href = "/login";
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

@@ -32,7 +32,7 @@ test.describe("Prediction flow", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
 
-    await expect(page.getByRole("heading", { name: "Predictions" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Predictions", exact: true })).toBeVisible();
   });
 
   test("settings page is accessible from dashboard", async ({ page }) => {
@@ -54,7 +54,7 @@ test.describe("Prediction flow", () => {
     await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
 
     await page.goto("/history");
-    await expect(page.getByText(/history|predictions/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Prediction History" })).toBeVisible();
   });
 
   test("prediction form textarea updates character count", async ({ page }) => {
@@ -76,7 +76,9 @@ test.describe("Prediction flow", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
 
+    const textarea = page.getByPlaceholder(/what would you like to predict/i);
+    await textarea.fill("a");
     await page.getByRole("button", { name: /generate prediction/i }).click();
-    await expect(page.getByText(/required|must be at least/i)).toBeVisible();
+    await expect(page.getByText("Question must be at least 10 characters")).toBeVisible();
   });
 });
