@@ -44,7 +44,7 @@ test.describe("Admin flow", () => {
     page.on("request", (r) => requests.push(`${r.method()} ${r.url()}`));
     page.on("response", (r) => {
       if (r.url().includes("/api/auth")) {
-        console.log(`[DBG] ${r.status()} ${r.method()} ${r.url()}`);
+        console.log(`[DBG] ${r.status()} ${r.request().method()} ${r.url()}`);
       }
     });
     page.on("pageerror", (err) => console.log("[DBG] pageerror:", err.message));
