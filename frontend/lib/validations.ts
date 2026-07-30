@@ -15,6 +15,12 @@ export const signupSchema = z.object({
   path: ["confirmPassword"],
 });
 
+export const signupServerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be 100 characters or less"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters").max(128, "Password must be 128 characters or less"),
+});
+
 export const predictionSchema = z.object({
   input: z.string().min(10, "Question must be at least 10 characters").max(2000, "Question too long"),
 });

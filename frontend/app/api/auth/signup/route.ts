@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users, analyticsEvents } from "@/lib/schema";
 import bcrypt from "bcryptjs";
-import { signupSchema } from "@/lib/validations";
+import { signupServerSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendWelcomeEmail } from "@/lib/email";
 import { eq } from "drizzle-orm";
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const parsed = signupSchema.safeParse(body);
+    const parsed = signupServerSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     }
