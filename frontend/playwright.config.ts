@@ -6,11 +6,11 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
+  timeout: 60000,
   reporter: process.env.CI ? [["html"], ["list"], ["github"]] : "html",
   use: {
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
-    timeout: 60000,
     actionTimeout: 30000,
   },
   projects: [
