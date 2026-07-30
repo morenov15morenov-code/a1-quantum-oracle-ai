@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import type { ProjectionResult, ProjectionInput } from "@/lib/projection";
 
 const DEFAULT_INPUTS: ProjectionInput = {
@@ -21,8 +21,14 @@ export default function ProjectionPage() {
   const [inputs, setInputs] = useState<ProjectionInput>(DEFAULT_INPUTS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [initialized, setInitialized] = useState(false);
 
-  const fetchProjection = useCallback(async (params: ProjectionInput) => {
+  if (!initialized) {
+    setInitialized(true);
+    fetchProjection(inputs);
+  }
+
+  async function fetchProjection(params: ProjectionInput) {
     setLoading(true);
     setError("");
     try {
@@ -47,12 +53,12 @@ export default function ProjectionPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => { fetchProjection(inputs); }, [fetchProjection, inputs]);
+  }
 
   function update<K extends keyof ProjectionInput>(key: K, value: ProjectionInput[K]) {
-    setInputs((prev) => ({ ...prev, [key]: value }));
+    const next = { ...inputs, [key]: value };
+    setInputs(next);
+    fetchProjection(next);
   }
 
   function exportCsv() {
