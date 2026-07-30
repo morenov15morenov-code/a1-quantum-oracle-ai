@@ -32,7 +32,7 @@ test.describe("Prediction flow", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
 
-    await expect(page.getByText(/welcome|dashboard/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Predictions" })).toBeVisible();
   });
 
   test("settings page is accessible from dashboard", async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe("Prediction flow", () => {
     await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
 
     await page.goto("/settings");
-    await expect(page.getByText(/settings|profile/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
   });
 
   test("history page is accessible from dashboard", async ({ page }) => {
@@ -66,7 +66,7 @@ test.describe("Prediction flow", () => {
 
     const textarea = page.getByPlaceholder(/what would you like to predict/i);
     await textarea.fill("Will the stock market go up tomorrow?");
-    await expect(page.getByText("38/2000")).toBeVisible();
+    await expect(page.getByText("37/2000")).toBeVisible();
   });
 
   test("prediction form requires non-empty input", async ({ page }) => {

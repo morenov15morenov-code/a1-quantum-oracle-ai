@@ -33,7 +33,7 @@ test.describe("Responsive design", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
 
-    await expect(page.getByText(/dashboard|prediction/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Predictions" })).toBeVisible();
   });
 
   test("landing page works on tablet", async ({ page }) => {

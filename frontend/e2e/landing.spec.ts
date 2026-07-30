@@ -27,7 +27,7 @@ test.describe("Landing page", () => {
   test("shows app description", async ({ page }) => {
     await page.goto("/");
     await expect(
-      page.getByText(/AI-powered prediction and forecasting tool/)
+      page.getByText(/AI-powered predictions/)
     ).toBeVisible();
   });
 });
