@@ -131,6 +131,6 @@ test.describe("Settings page", () => {
     await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
 
     await page.goto("/settings");
-    await expect(page.getByText(/settings|profile|account/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
   });
 });

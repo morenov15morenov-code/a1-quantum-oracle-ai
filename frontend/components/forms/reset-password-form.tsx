@@ -48,14 +48,14 @@ export function ResetPasswordForm() {
   const token = searchParams.get("token");
   const [state, formAction, pending] = useActionState(resetPasswordAction, {});
 
-  if (!token) {
+  if (!token || token.length !== 64) {
     return (
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl">Invalid Link</CardTitle>
-          <CardDescription>This password reset link is invalid or missing a token.</CardDescription>
+          <CardTitle className="text-2xl">Invalid Token</CardTitle>
+          <CardDescription>This password reset link is invalid or has expired.</CardDescription>
         </CardHeader>
-          <CardContent>
+        <CardContent>
           <Link href="/request-reset" className="text-primary underline-offset-4 hover:underline">
             Request a new reset link
           </Link>
