@@ -42,15 +42,12 @@ test.describe("Admin flow", () => {
   test("non-admin user is redirected from admin pages", async ({ page }) => {
     const email = `user${Date.now()}@test.com`;
 
-    await page.goto("/signup");
-    await page.getByLabel("Name").fill("Regular User");
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password", { exact: true }).fill("password123");
-    await page.getByLabel("Confirm Password").fill("password123");
-    await page.getByRole("button", { name: /create account/i }).click();
+    const signupRes = await page.request.post("/api/auth/signup", {
+      data: { name: "Regular User", email, password: "password123" },
+    });
+    expect(signupRes.status()).toBe(201);
 
-    await page.waitForURL(/\/login/);
-
+    await page.goto("/login");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password", { exact: true }).fill("password123");
     await page.getByRole("button", { name: /sign in/i }).click();
