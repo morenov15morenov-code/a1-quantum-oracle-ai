@@ -65,7 +65,7 @@ export async function proxy(request: NextRequest) {
   const isAdminPage = pathname.startsWith("/admin");
   const isApiRoute = pathname.startsWith("/api");
   const isAdminApiRoute = pathname.startsWith("/api/admin");
-  const isPublic = pathname === "/" || pathname.startsWith("/api/health");
+  const isPublic = pathname === "/" || pathname.startsWith("/api/health") || pathname === "/request-reset" || pathname === "/reset-password";
   const isAuthApi = pathname.startsWith("/api/auth/");
 
   if (isPublic) {
