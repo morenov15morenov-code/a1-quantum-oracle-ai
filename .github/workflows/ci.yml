@@ -126,19 +126,23 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
+      - name: Docker diagnostics
+        run: |
+          docker version
+          docker build --version
       - name: Build Docker image
         id: docker-build
         run: |
-          docker build -f frontend/Dockerfile -t atlas-oracle:latest \
+          set -o pipefail
+          docker build --progress=plain -f frontend/Dockerfile -t atlas-oracle:latest \
             --build-arg DATABASE_URL="file:./data/dev.db" \
             --build-arg AUTH_SECRET="ci-test-secret" \
             --build-arg NEXT_PUBLIC_APP_URL="http://localhost:3000" \
             frontend/ 2>&1 | tee /tmp/docker-build.log
-          exit ${PIPESTATUS[0]}
       - name: Surface build errors
         if: failure()
         run: |
-          tail -n 80 /tmp/docker-build.log 2>/dev/null | while IFS= read -r line; do echo "::error::$line"; done
+          tail -n 120 /tmp/docker-build.log 2>/dev/null | while IFS= read -r line; do echo "::error::$line"; done
       - name: Test Docker health check
         run: |
           docker run -d --name atlas-test -p 3000:3000 \
