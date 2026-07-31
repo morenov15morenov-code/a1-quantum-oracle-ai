@@ -27,8 +27,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 
-RUN addgroup --system --gid 1001 --group nodejs
-RUN adduser --system --uid 1001 --ingroup nodejs nextjs
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
 # Install drizzle-kit for schema push at startup
 RUN npm install -g drizzle-kit@^0.31.10
@@ -44,7 +44,7 @@ COPY --from=builder /app/lib/schema.ts ./lib/schema.ts
 COPY --from=builder /app/scripts ./scripts
 
 RUN mkdir -p /app/data \
-  && chown -R nextjs:nodejs /app/data
+  && chown -R nextjs:nodejs /app
 
 USER nextjs
 
