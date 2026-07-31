@@ -2,7 +2,7 @@
 
 > A universal foresight engine for anyone facing any decision. Not a market tool. Not a niche app. An oracle for every human question.
 
-Last updated: 2026-07-29
+Last updated: 2026-08-01
 
 ## Quick Start
 
@@ -15,15 +15,19 @@ npm run dev                  # start dev server on http://localhost:3000
 
 Requires `DATABASE_URL="file:./prisma/dev.db"` in `.env.local` for database commands.
 
-## Current Status: CI IN PROGRESS
+## Current Status: PRE-DEPLOYMENT HARDENING COMPLETE
 
 | Check | Result |
 |---|---|
 | TypeScript (`npx tsc --noEmit`) | 0 errors |
 | ESLint (`npm run lint`) | 0 errors, 0 warnings |
-| Vitest (`npx vitest run`) | 293 passed, 0 failed, 37 files |
-| Next.js build (`npm run build`) | Compiled successfully, 28 routes generated |
+| Vitest (`npx vitest run`) | 323 passed, 0 failed, 42 files |
+| Next.js build (`npm run build`) | Compiled successfully, 40 pages, 21 API routes |
+| Playwright E2E (`npx playwright test --workers=1`) | 56 passed, 2 skipped (Google/GitHub OAuth unconfigured), 0 failed |
 | Prisma → Drizzle Migration | Complete — all routes, tests, and configs updated |
+| Git hygiene | `frontend/prisma/dev.db` untracked from git (contained user data + bcrypt hashes) |
+
+> **Note**: The `dev.db` removal from tracking is staged (`git rm --cached`) but **not committed yet** — committing is the remaining step.
 
 ### CI Pipeline History
 
@@ -107,15 +111,30 @@ a8caeee fix: migrate middleware to proxy (Next.js 16)
 - **Analytics Dashboard**: User and admin analytics with domain breakdown, accuracy rates
 - **Rate Limiting**: Enhanced per-route rate limiting with headers
 
+### Phase 12: Production Hardening (Pre-Deployment)
+- **DB-backed rate limiter** (`lib/rate-limit.ts`): replaced in-memory maps with a `RateLimit` table via `@libsql/client` — atomic upsert, survives restarts. All call sites awaited.
+- **Email verification gate** (`EMAIL_VERIFICATION_REQUIRED`, default off): signup stores a 24h sha256-hashed token, `/api/auth/verify-email` (10/min) verifies, `/api/auth/resend-verification` (3/min) resends with enum-safe messages. Unverified users can still log in but `/api/predictions` POST returns 403. Verification banner in settings, auto-verify page, signup form messaging. OAuth users auto-verified.
+- **Account deletion** (`/api/user/delete`): full GDPR-style removal of user + predictions + feedback + subscriptions.
+- **Admin approval gate** (`ADMIN_APPROVAL_REQUIRED`, default false): PRO upgrades become `PENDING`; admin approves/rejects via `/api/admin/subscriptions` PATCH + subscription table UI. Free tier keeps 5 predictions/month.
+- **Payment gate** (`PAYMENT_GATE_ENABLED` + `STRIPE_SECRET_KEY`, default off): 402 upgrade path; otherwise PRO upgrades freely.
+- **Privacy page** (`/privacy`) + cookie consent banner (pointer-events fix so it never blocks clicks).
+- **Session maxAge** 30 days; **proxy.ts** (Next 16) public routes now include `/verify-email`, `/privacy`, `/signup`.
+- **Settings overhaul**: profile form, password change form, delete account, subscription management.
+- **Prediction share button**, `app/api/sr` endpoint (`lib/sr.ts`), theme toggle component.
+- **Migration script** `scripts/migrate.ts` — backfills `emailVerifyToken`/`emailVerifyExpires` (applied to dev.db).
+- **Tests**: +3 gate test files + middleware/public-route tests + predictions-gate tests → 323 tests / 42 files; e2e 56 passed / 2 skipped.
+- **Git hygiene**: `frontend/prisma/dev.db` (real user data) removed from tracking; `.env.local` gitignored (never committed).
+
 ## Key Architecture Decisions
 
 - **Drizzle ORM over Prisma**: Lighter weight, better TypeScript inference, no code generation step, native LibSQL support
 - **Conditional Sentry**: `next.config.ts` wraps `withSentryConfig` only when `SENTRY_AUTH_TOKEN` is set
 - **React 19 lint**: `useFetch` uses `eslint-disable-line` for synchronous setState in effect
 - **ThemeToggle**: Uses `useSyncExternalStore` for hydration-safe mounting pattern
-- **Middleware**: Whitelists `/api/auth/*` from auth checks, adds rate limiting for POST requests
-- **OAuth**: Conditional provider registration, auto-creates USER role on first login
-- **Rate Limiting**: Two layers — middleware-level (20/min per IP) + per-route (signup: 3/min, login: 5/min)
+- **Middleware/Proxy**: `proxy.ts` (Next 16 replacement for middleware) whitelists `/api/auth/*` from auth checks, adds rate limiting for POST requests, and treats `/`, `/login`, `/signup`, `/verify-email`, `/privacy` as public
+- **OAuth**: Conditional provider registration, auto-creates USER role on first login, auto-verified emails
+- **Rate Limiting**: Three layers — proxy-level per-IP + DB-backed per-route (signup: 3/min, login: 5/min, etc.) + login lockout window
+- **Feature gates**: `ADMIN_APPROVAL_REQUIRED`, `PAYMENT_GATE_ENABLED`, `EMAIL_VERIFICATION_REQUIRED` are all opt-in (default off) and read from env at module load — tests that vary them use `vi.resetModules()` + dynamic `import()`
 
 ## Environment Variables
 
@@ -135,6 +154,16 @@ a8caeee fix: migrate middleware to proxy (Next.js 16)
 | `GOOGLE_CLIENT_SECRET` | No | Google OAuth client secret |
 | `GITHUB_CLIENT_ID` | No | GitHub OAuth client ID |
 | `GITHUB_CLIENT_SECRET` | No | GitHub OAuth client secret |
+| `EMAIL_VERIFICATION_REQUIRED` | No | `true` gates new accounts behind email verification (default off) |
+| `ADMIN_APPROVAL_REQUIRED` | No | `true` makes PRO upgrades PENDING until admin approves (default off) |
+| `PAYMENT_GATE_ENABLED` | No | `true` requires `STRIPE_SECRET_KEY` and returns 402 for unpaid upgrades (default off) |
+| `STRIPE_SECRET_KEY` | No | Stripe secret key for payment gate |
+| `LOGIN_RATE_LIMIT_MAX` | No | Login per-IP limit window (DB-backed; default 5) |
+| `SIGNUP_RATE_LIMIT_MAX` | No | Signup per-IP limit window (DB-backed; default 3) |
+| `RESET_RATE_LIMIT_MAX` | No | Password-reset per-IP limit window (DB-backed; default 3) |
+| `PREDICT_RATE_LIMIT_MAX` | No | Predictions per-user limit window (DB-backed; default 10) |
+
+> `.env.local` (frontend) holds dev-only overrides and is gitignored — it must never be committed. Production defaults live in `frontend/.env.example`.
 
 ## Deployment Options
 
@@ -158,7 +187,12 @@ npm run build
 npm start
 ```
 
-## What's Left (Optional)
+## What's Left
+
+### Immediate (before shipping)
+1. **Commit the current workstream** — including the staged `dev.db` untrack (`git rm --cached`) so the database with user data is no longer in history going forward
+2. **Re-verify CI jobs** — `electron-build` and `docker` jobs in `.github/workflows/ci.yml` have been failing since #6 (path/context issues); validate them on a fresh push
+3. **Decide feature gates** — set `ADMIN_APPROVAL_REQUIRED`, `PAYMENT_GATE_ENABLED`, `EMAIL_VERIFICATION_REQUIRED` to the desired values for production (all default off)
 
 ### Production Environment Setup
 1. Set up Turso database for production

@@ -11,6 +11,7 @@ const sidebarItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "chart" },
   { href: "/admin/projection", label: "Projection", icon: "projection" },
   { href: "/admin/users", label: "Users", icon: "users" },
+  { href: "/admin/subscriptions", label: "Subscriptions", icon: "subscriptions" },
   { href: "/admin/predictions", label: "Predictions", icon: "predictions" },
   { href: "/admin/settings", label: "Settings", icon: "settings" },
 ];
@@ -39,6 +40,12 @@ function SidebarIcon({ icon }: { icon: string }) {
       return (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+        </svg>
+      );
+    case "subscriptions":
+      return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h10M5 6h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
         </svg>
       );
     case "settings":

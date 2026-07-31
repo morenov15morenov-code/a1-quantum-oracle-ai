@@ -11,6 +11,7 @@ import { signupSchema } from "@/lib/validations";
 
 export function SignupForm() {
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -43,6 +44,13 @@ export function SignupForm() {
       if (!res.ok) {
         const err = await res.json();
         setError(err.error ?? "Failed to create account");
+        setPending(false);
+        return;
+      }
+
+      const payload = await res.json();
+      if (payload?.message) {
+        setMessage(payload.message);
         setPending(false);
         return;
       }
@@ -102,6 +110,17 @@ export function SignupForm() {
           {error && (
             <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" role="alert" aria-live="polite">
               {error}
+            </div>
+          )}
+          {message && (
+            <div className="space-y-2 rounded-md bg-green-500/15 p-3 text-sm text-green-700 dark:text-green-400" role="status">
+              <p>{message}</p>
+              <p className="text-xs">
+                Didn&apos;t get the email?{" "}
+                <Link href="/verify-email" className="underline underline-offset-4">
+                  Resend the verification link
+                </Link>
+              </p>
             </div>
           )}
 

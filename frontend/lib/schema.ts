@@ -14,6 +14,8 @@ export const users = sqliteTable("User", {
   lockedUntil: integer("lockedUntil", { mode: "timestamp_ms" }),
   passwordResetToken: text("passwordResetToken"),
   passwordResetExpires: integer("passwordResetExpires", { mode: "timestamp_ms" }),
+  emailVerifyToken: text("emailVerifyToken"),
+  emailVerifyExpires: integer("emailVerifyExpires", { mode: "timestamp_ms" }),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()).$onUpdateFn(() => new Date()),
 });
@@ -50,12 +52,19 @@ export const subscriptions = sqliteTable("Subscription", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("userId").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
   tier: text("tier").notNull().default("FREE"),
+  status: text("status").notNull().default("ACTIVE"),
   predsUsed: integer("predsUsed").notNull().default(0),
   predsLimit: integer("predsLimit").notNull().default(5),
   periodStart: integer("periodStart", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
   periodEnd: integer("periodEnd", { mode: "timestamp_ms" }),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()).$onUpdateFn(() => new Date()),
+});
+
+export const rateLimits = sqliteTable("RateLimit", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  resetAt: integer("resetAt").notNull(),
 });
 
 export const analyticsEvents = sqliteTable("AnalyticsEvent", {

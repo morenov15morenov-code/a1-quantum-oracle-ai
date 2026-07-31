@@ -34,6 +34,7 @@ export interface UserProfile {
 export interface SubscriptionData {
   id: string;
   tier: string;
+  status: string;
   predsUsed: number;
   predsLimit: number;
   periodStart: Date | string;

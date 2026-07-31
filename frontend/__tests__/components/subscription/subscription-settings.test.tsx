@@ -71,7 +71,7 @@ describe("SubscriptionSettings", () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        id: "sub-1", tier: "PRO", predsUsed: 10, predsLimit: 100, periodStart: new Date().toISOString(), periodEnd: null,
+        id: "sub-1", tier: "PRO", status: "ACTIVE", predsUsed: 10, predsLimit: 100, periodStart: new Date().toISOString(), periodEnd: null,
       }),
     });
 
@@ -80,6 +80,22 @@ describe("SubscriptionSettings", () => {
     await waitFor(() => {
       const currentPlans = screen.getAllByText("Current plan");
       expect(currentPlans.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("shows pending approval notice for pending pro users", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: "sub-1", tier: "PRO", status: "PENDING", predsUsed: 0, predsLimit: 5, periodStart: new Date().toISOString(), periodEnd: null,
+      }),
+    });
+
+    render(<SubscriptionSettings />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/pending approval/i).length).toBeGreaterThan(0);
+      expect(screen.getByText("Cancel Request")).toBeInTheDocument();
     });
   });
 });

@@ -1,61 +1,64 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { rateLimit } from "@/lib/rate-limit";
+import type { RateLimitResult } from "@/lib/rate-limit";
+
+vi.setConfig({ testTimeout: 30000 });
 
 describe("rateLimit", () => {
   beforeEach(() => {
     vi.resetModules();
   });
 
-  it("allows requests within limit", () => {
-    const result = rateLimit("test-key", 3, 60000);
+  async function callRateLimit(key: string, limit?: number, windowMs?: number): Promise<RateLimitResult> {
+    const mod = await import("@/lib/rate-limit");
+    return mod.rateLimit(key, limit, windowMs);
+  }
+
+  it("allows requests within limit", async () => {
+    const result = await callRateLimit("test-key", 3, 60000);
     expect(result.success).toBe(true);
     expect(result.remaining).toBe(2);
   });
 
-  it("tracks remaining count", () => {
-    rateLimit("remaining-key", 3, 60000);
-    const second = rateLimit("remaining-key", 3, 60000);
+  it("tracks remaining count", async () => {
+    await callRateLimit("remaining-key", 3, 60000);
+    const second = await callRateLimit("remaining-key", 3, 60000);
     expect(second.remaining).toBe(1);
-    const third = rateLimit("remaining-key", 3, 60000);
+    const third = await callRateLimit("remaining-key", 3, 60000);
     expect(third.remaining).toBe(0);
   });
 
-  it("blocks when limit exceeded", () => {
-    rateLimit("block-key", 2, 60000);
-    rateLimit("block-key", 2, 60000);
-    const result = rateLimit("block-key", 2, 60000);
+  it("blocks when limit exceeded", async () => {
+    await callRateLimit("block-key", 2, 60000);
+    await callRateLimit("block-key", 2, 60000);
+    const result = await callRateLimit("block-key", 2, 60000);
     expect(result.success).toBe(false);
     expect(result.remaining).toBe(0);
   });
 
-  it("resets after window expires", () => {
-    return new Promise<void>((resolve) => {
-      const key = "reset-key";
-      rateLimit(key, 1, 50);
-      rateLimit(key, 1, 50);
-      const blocked = rateLimit(key, 1, 50);
-      expect(blocked.success).toBe(false);
+  it("resets after window expires", async () => {
+    const key = "reset-key";
+    await callRateLimit(key, 1, 50);
+    await callRateLimit(key, 1, 50);
+    const blocked = await callRateLimit(key, 1, 50);
+    expect(blocked.success).toBe(false);
 
-      setTimeout(() => {
-        const afterReset = rateLimit(key, 1, 50);
-        expect(afterReset.success).toBe(true);
-        resolve();
-      }, 60);
-    });
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const afterReset = await callRateLimit(key, 1, 50);
+    expect(afterReset.success).toBe(true);
   });
 
-  it("handles different keys independently", () => {
-    rateLimit("key-a", 1, 60000);
-    const aResult = rateLimit("key-a", 1, 60000);
+  it("handles different keys independently", async () => {
+    await callRateLimit("key-a", 1, 60000);
+    const aResult = await callRateLimit("key-a", 1, 60000);
     expect(aResult.success).toBe(false);
 
-    const bResult = rateLimit("key-b", 1, 60000);
+    const bResult = await callRateLimit("key-b", 1, 60000);
     expect(bResult.success).toBe(true);
   });
 
-  it("uses default limit of 20 when not specified", () => {
+  it("uses default limit of 20 when not specified", async () => {
     for (let i = 0; i < 20; i++) {
-      const result = rateLimit(`default-${i}`, 20);
+      const result = await callRateLimit(`default-${i}`, 20);
       expect(result.success).toBe(true);
     }
   });

@@ -71,6 +71,7 @@ const providers: Provider[] = [
         email: user.email,
         name: user.name,
         role: user.role as Role,
+        emailVerified: user.emailVerified?.toISOString() ?? null,
       };
     },
   }),
@@ -100,7 +101,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     accountsTable: accounts,
     sessionsTable: sessions,
   }) as unknown as Adapter,
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 7 * 24 * 60 * 60 }, // 7 days
   pages: {
     signIn: "/login",
   },
@@ -110,6 +111,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = (user as { role: Role }).role;
+        token.emailVerified = (user as { emailVerified?: string | null }).emailVerified ?? null;
       }
       return token;
     },
@@ -118,6 +120,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         user.id = token.id as string;
         user.role = token.role as Role;
+        user.emailVerified = token.emailVerified as string | null;
       }
       return session;
     },
@@ -141,6 +144,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email,
           password: "",
           role: "USER",
+          emailVerified: new Date(),
         }).returning().get();
 
         user.id = newUser.id;

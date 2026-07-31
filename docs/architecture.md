@@ -72,21 +72,29 @@ atlas-oracle/                          # Project root
 │   ├── lib/                           # Shared utilities
 │   │   ├── ai.ts                      # AI prediction engine (OpenAI + mock)
 │   │   ├── auth.ts                    # NextAuth + DrizzleAdapter
+│   │   ├── schema.ts                  # Drizzle schema (8 tables)
 │   │   ├── db.ts                      # Drizzle client singleton
-│   │   ├── rate-limit.ts              # In-memory rate limiter
+│   │   ├── oracle.ts                  # Self-learning oracle (similarity, feedback)
+│   │   ├── similarity.ts              # Cosine similarity engine
+│   │   ├── projection.ts              # Multi-dimensional projection
+│   │   ├── sr.ts                      # Statistical reasoning layer
+│   │   ├── rate-limit.ts              # DB-backed rate limiter (RateLimit table)
+│   │   ├── admin-guard.ts             # Admin RBAC guard
+│   │   ├── email.ts                   # Resend email service
+│   │   ├── logger.ts                  # Structured logger
+│   │   ├── pagination.ts              # Pagination helpers
 │   │   ├── use-fetch.ts               # React useFetch hook
 │   │   ├── utils.ts                   # cn(), formatDate(), formatConfidence()
 │   │   └── validations.ts             # Zod schemas
 │   │
 │   ├── types/                         # TypeScript type definitions
-│   ├── schema.ts                      # Drizzle schema (7 tables)
-│   ├── drizzle.config.ts              # Drizzle Kit config
-│   ├── prisma/                        # SQLite database file
-│   ├── scripts/                       # Database seed script
+│   ├── drizzle/                       # Drizzle Kit migrations
+│   ├── prisma/                        # SQLite database file (gitignored)
+│   ├── scripts/                       # seed.ts + migrate.ts
 │   ├── assets/                        # App icons
 │   ├── e2e/                           # Playwright end-to-end tests
 │   ├── __tests__/                     # Vitest unit/component tests
-│   ├── middleware.ts                   # Next.js middleware (auth, RBAC)
+│   ├── proxy.ts                       # Next.js proxy (auth, RBAC, rate limiting)
 │   ├── next.config.ts                 # Next.js configuration
 │   ├── vitest.config.ts               # Vitest configuration
 │   ├── playwright.config.ts           # Playwright configuration
@@ -159,12 +167,15 @@ atlas-oracle/                          # Project root
 
 ```
 ┌─────────────────────────────────────────────┐
-│          Next.js Middleware                  │
+│          Next.js Proxy (proxy.ts)            │
 │                                             │
-│  • Public routes: /, /api/health            │
+│  • Public routes: /, /login, /signup,       │
+│    /verify-email, /privacy, /api/health     │
 │  • Auth required: /dashboard, /history,     │
-│    /prediction/*, /api/predictions          │
+│    /settings, /prediction/*, /api/predictions│
 │  • Admin required: /admin/*                 │
+│  • Email-verified required: /api/predictions│
+│    POST (when EMAIL_VERIFICATION_REQUIRED)  │
 │  • Auth pages: /login, /signup              │
 │    (redirect authenticated users away)      │
 └──────────────────┬──────────────────────────┘
@@ -190,27 +201,43 @@ atlas-oracle/                          # Project root
 
 ### System
 - `GET /api/health` — Health check (public)
+- `POST /api/sr` — Statistical reasoning endpoint (auth required)
 
 ### Auth
-- `POST /api/auth/signup` — Create account (rate limited: 3/min per IP)
+- `POST /api/auth/signup` — Create account (rate limited: 3/min per IP; gated by email verification when enabled)
+- `POST /api/auth/verify-email` — Verify email via token (rate limited: 10/min)
+- `POST /api/auth/resend-verification` — Resend verification email (rate limited: 3/min)
+- `POST /api/auth/request-reset` — Request password reset (rate limited, anti-enumeration)
+- `POST /api/auth/reset-password` — Reset password with token
 - `POST /api/auth/[...nextauth]` — Auth.js sign in/out, session
 
 ### Predictions
-- `POST /api/predictions` — Generate prediction (auth required, rate limited: 10/min)
+- `POST /api/predictions` — Generate prediction (auth + verified email required when gated, rate limited: 10/min)
 - `GET /api/predictions` — List user predictions (auth required, paginated)
+- `POST /api/predictions/feedback` — Rate a prediction for accuracy feedback
+
+### User
+- `GET/PATCH /api/user/profile` — Read/update own profile
+- `PATCH /api/user/password` — Change password
+- `GET/PATCH /api/user/subscription` — Read/upgrade subscription (PRO gate)
+- `DELETE /api/user/delete` — Permanently delete account + all data
 
 ### Admin
 - `GET /api/admin/users` — List all users (admin only)
 - `PATCH /api/admin/users` — Toggle user active status (admin only)
 - `GET /api/admin/predictions` — List all predictions (admin only, paginated)
 - `GET /api/admin/analytics` — Platform analytics (admin only)
+- `GET/PATCH /api/admin/subscriptions` — Review/approve PRO upgrade requests (admin only)
 
 ---
 
-## Database Schema (Drizzle ORM)
+## Database Schema (Drizzle ORM) — 8 tables (`lib/schema.ts`)
 
-- **User** — id, name, email, password (bcrypt), role (USER/ADMIN), active, timestamps
-- **Prediction** — id, userId (FK), input, result, confidence, reasoning, model, tokensIn/Out, createdAt
+- **User** — id, name, email, emailVerified, password (bcrypt), role (USER/ADMIN), active, failedAttempts, lockedUntil, passwordResetToken/Expires, emailVerifyToken/Expires, timestamps
+- **Prediction** — id, userId (FK), input, result, confidence, reasoning, model, domain, tokensIn/Out, createdAt
+- **PredictionFeedback** — id, predictionId (FK), userId (FK), accurate, comment, createdAt
+- **Subscription** — id, userId (FK), tier (FREE/PRO), status (ACTIVE/PENDING/REJECTED), periodEnd, createdAt
+- **RateLimit** — id, key, count, resetAt (atomic upsert, DB-backed rate limiting)
 - **AnalyticsEvent** — id, event, userId (optional), metadata, createdAt
 - **Account** — standard Auth.js adapter model
 - **Session** — standard Auth.js adapter model

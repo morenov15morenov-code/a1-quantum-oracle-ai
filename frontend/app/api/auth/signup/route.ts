@@ -2,14 +2,22 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users, analyticsEvents } from "@/lib/schema";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { signupServerSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
-import { sendWelcomeEmail } from "@/lib/email";
+import { sendWelcomeEmail, sendVerificationEmail } from "@/lib/email";
 import { eq } from "drizzle-orm";
+
+function hashToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+const VERIFICATION_REQUIRED = process.env.EMAIL_VERIFICATION_REQUIRED === "true";
+const VERIFY_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`signup:${ip}`, Number(process.env.SIGNUP_RATE_LIMIT_MAX) || 3, 60000);
+  const rl = await rateLimit(`signup:${ip}`, Number(process.env.SIGNUP_RATE_LIMIT_MAX) || 3, 60000);
   if (!rl.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
   }
@@ -30,10 +38,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
     }
 
+    let emailVerified: Date | null = new Date();
+    let emailVerifyToken: string | null = null;
+    let emailVerifyExpires: Date | null = null;
+
+    if (VERIFICATION_REQUIRED) {
+      emailVerified = null;
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      emailVerifyToken = hashToken(rawToken);
+      emailVerifyExpires = new Date(Date.now() + VERIFY_TOKEN_EXPIRY_MS);
+
+      const user = await db.insert(users).values({
+        name,
+        email: normalizedEmail,
+        password: hashedPassword,
+        emailVerified: null,
+        emailVerifyToken,
+        emailVerifyExpires,
+      }).returning().get();
+
+      await db.insert(analyticsEvents).values({ event: "user_signup", userId: user.id }).run();
+
+      const appUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+      const verifyUrl = `${appUrl}/verify-email?token=${rawToken}`;
+      sendVerificationEmail(user.email, verifyUrl).catch(() => {});
+
+      return NextResponse.json(
+        { id: user.id, name: user.name, email: user.email, message: "Please verify your email to activate your account." },
+        { status: 201 }
+      );
+    }
+
     const user = await db.insert(users).values({
       name,
       email: normalizedEmail,
       password: hashedPassword,
+      emailVerified,
+      emailVerifyToken,
+      emailVerifyExpires,
     }).returning().get();
 
     await db.insert(analyticsEvents).values({ event: "user_signup", userId: user.id }).run();

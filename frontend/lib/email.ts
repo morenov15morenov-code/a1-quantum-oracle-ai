@@ -55,6 +55,33 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
   });
 }
 
+export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<boolean> {
+  return sendEmail({
+    to,
+    subject: "Verify your Atlas Oracle email",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #1a1a1a;">Verify your email address</h2>
+        <p style="color: #4a4a4a; line-height: 1.6;">
+          Thanks for signing up for Atlas Oracle. Please confirm your email address by clicking the button below.
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verifyUrl}" style="background-color: #1a1a1a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            Verify Email
+          </a>
+        </div>
+        <p style="color: #6a6a6a; font-size: 14px;">
+          This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
+        </p>
+        <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;" />
+        <p style="color: #9a9a9a; font-size: 12px;">
+          Atlas Oracle — AI-Powered Predictions & Forecasting
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function sendWelcomeEmail(to: string, name: string): Promise<boolean> {
   return sendEmail({
     to,

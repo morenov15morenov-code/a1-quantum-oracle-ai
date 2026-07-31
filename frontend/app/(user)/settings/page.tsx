@@ -2,6 +2,8 @@
 
 import { SettingsForm } from "@/components/forms/settings-form";
 import { SubscriptionSettings } from "@/components/subscription/subscription-settings";
+import { DeleteAccountForm } from "@/components/forms/delete-account-form";
+import { VerificationBanner } from "@/components/auth/verification-banner";
 
 export default function SettingsPage() {
   return (
@@ -13,11 +15,18 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      <VerificationBanner />
+
       <SettingsForm />
 
       <div>
         <h2 className="mb-4 text-xl font-semibold">Subscription</h2>
         <SubscriptionSettings />
+      </div>
+
+      <div>
+        <h2 className="mb-4 text-xl font-semibold">Danger Zone</h2>
+        <DeleteAccountForm />
       </div>
     </div>
   );

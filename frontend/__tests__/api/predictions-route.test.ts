@@ -123,6 +123,33 @@ describe("Predictions API - POST", () => {
     const response = await POST(createAuthRequest({ input: "What will happen next quarter?" }));
     expect(response.status).toBe(201);
   });
+
+  it("blocks unverified users when email verification is required", async () => {
+    vi.stubEnv("EMAIL_VERIFICATION_REQUIRED", "true");
+    mockAuth.mockResolvedValue({ user: { id: "user-1", emailVerified: null } });
+    dbMock.select.mockReturnValue(selectChain({ ...subData, periodEnd: null }));
+
+    const response = await POST(createAuthRequest({ input: "What will happen next quarter?" }));
+    expect(response.status).toBe(403);
+    const body = await response.json();
+    expect(body.error).toContain("verify your email");
+    vi.unstubAllEnvs();
+  });
+
+  it("allows verified users when email verification is required", async () => {
+    vi.stubEnv("EMAIL_VERIFICATION_REQUIRED", "true");
+    mockAuth.mockResolvedValue({ user: { id: "user-1", emailVerified: new Date().toISOString() } });
+    dbMock.select.mockReturnValue(selectChain({ ...subData, periodEnd: null }));
+    mockOracle.mockResolvedValue({ result: "Forecast result", confidence: 0.7, reasoning: "Reasoning" });
+    dbMock.insert
+      .mockReturnValueOnce(insertChain({ id: "pred-1" }))
+      .mockReturnValueOnce(insertChain(undefined));
+    dbMock.update.mockReturnValueOnce(updateChain(undefined));
+
+    const response = await POST(createAuthRequest({ input: "What will happen next quarter?" }));
+    expect(response.status).toBe(201);
+    vi.unstubAllEnvs();
+  });
 });
 
 describe("Predictions API - GET", () => {

@@ -12,7 +12,7 @@ function hashToken(token: string): string {
 
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`reset-confirm:${ip}`, 5, 60000);
+  const rl = await rateLimit(`reset-confirm:${ip}`, 5, 60000);
   if (!rl.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
   }

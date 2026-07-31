@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   }
 
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`admin-analytics:${session.user.id}:${ip}`, 10, 60000);
+  const rl = await rateLimit(`admin-analytics:${session.user.id}:${ip}`, 10, 60000);
   if (!rl.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
   }

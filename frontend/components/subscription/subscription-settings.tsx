@@ -56,7 +56,8 @@ export function SubscriptionSettings() {
 
   if (!subscription) return null;
 
-  const isPro = subscription.tier === "PRO";
+  const isPro = subscription.tier === "PRO" && subscription.status === "ACTIVE";
+  const isPending = subscription.tier === "PRO" && subscription.status === "PENDING";
   const usagePercent = subscription.predsLimit > 0
     ? (subscription.predsUsed / subscription.predsLimit) * 100
     : 0;
@@ -66,6 +67,12 @@ export function SubscriptionSettings() {
       {error && (
         <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive" role="alert">
           {error}
+        </div>
+      )}
+
+      {isPending && (
+        <div className="rounded-md bg-yellow-500/15 p-3 text-sm text-yellow-700 dark:text-yellow-400" role="status">
+          Your PRO upgrade is pending approval. You will be notified once an administrator reviews it.
         </div>
       )}
 
@@ -84,8 +91,10 @@ export function SubscriptionSettings() {
               <li>Prediction history</li>
               <li>Feedback tracking</li>
             </ul>
-            {!isPro ? (
+            {isPro ? (
               <p className="text-sm font-medium text-green-600 dark:text-green-400">Current plan</p>
+            ) : isPending ? (
+              <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Pending approval</p>
             ) : (
               <Button
                 variant="outline"
@@ -115,6 +124,14 @@ export function SubscriptionSettings() {
             </ul>
             {isPro ? (
               <p className="text-sm font-medium text-green-600 dark:text-green-400">Current plan</p>
+            ) : isPending ? (
+              <Button
+                variant="outline"
+                onClick={() => handleUpgrade("FREE")}
+                disabled={upgrading}
+              >
+                Cancel Request
+              </Button>
             ) : (
               <Button
                 onClick={() => handleUpgrade("PRO")}

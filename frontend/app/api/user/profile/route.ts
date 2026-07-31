@@ -14,7 +14,7 @@ export async function PATCH(request: Request) {
   }
 
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`profile:${session.user.id}:${ip}`, 10, 60000);
+  const rl = await rateLimit(`profile:${session.user.id}:${ip}`, 10, 60000);
   if (!rl.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
   }
@@ -62,7 +62,7 @@ export async function PUT(request: Request) {
   }
 
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`password:${session.user.id}:${ip}`, 5, 60000);
+  const rl = await rateLimit(`password:${session.user.id}:${ip}`, 5, 60000);
   if (!rl.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
   }

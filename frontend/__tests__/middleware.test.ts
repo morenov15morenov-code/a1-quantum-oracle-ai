@@ -29,6 +29,30 @@ describe("Middleware auth logic", () => {
     expect(response?.headers).toBeDefined();
   });
 
+  it("allows unauthenticated access to verify-email page", async () => {
+    mockAuth.mockResolvedValue(null);
+    const { proxy } = await import("@/proxy");
+    const req = mockRequest("/verify-email?token=abc");
+    const response = await proxy(req);
+    expect(response?.headers).toBeDefined();
+  });
+
+  it("allows unauthenticated access to privacy page", async () => {
+    mockAuth.mockResolvedValue(null);
+    const { proxy } = await import("@/proxy");
+    const req = mockRequest("/privacy");
+    const response = await proxy(req);
+    expect(response?.headers).toBeDefined();
+  });
+
+  it("allows unauthenticated access to signup page", async () => {
+    mockAuth.mockResolvedValue(null);
+    const { proxy } = await import("@/proxy");
+    const req = mockRequest("/signup");
+    const response = await proxy(req);
+    expect(response?.headers).toBeDefined();
+  });
+
   it("redirects unauthenticated user to login", async () => {
     mockAuth.mockResolvedValue(null);
     const { proxy } = await import("@/proxy");

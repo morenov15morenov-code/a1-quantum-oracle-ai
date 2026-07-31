@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   }
 
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = rateLimit(`predict:${session.user.id}:${ip}`, 10, 60000);
+  const rl = await rateLimit(`predict:${session.user.id}:${ip}`, 10, 60000);
   if (!rl.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
   }
@@ -38,9 +38,21 @@ export async function POST(request: Request) {
   try {
     const subscription = await getOrCreateSubscription(session.user.id);
 
-    if (subscription.tier === "FREE" && subscription.predsUsed >= subscription.predsLimit) {
+    if (process.env.EMAIL_VERIFICATION_REQUIRED === "true" && !session.user.emailVerified) {
       return NextResponse.json(
-        { error: "Free prediction limit reached. Upgrade to Pro for unlimited predictions." },
+        { error: "Please verify your email before making predictions. Check your inbox for the verification link." },
+        { status: 403 }
+      );
+    }
+
+    if ((subscription.tier === "FREE" || subscription.status === "PENDING") && subscription.predsUsed >= subscription.predsLimit) {
+      const pendingApproval = subscription.status === "PENDING";
+      return NextResponse.json(
+        {
+          error: pendingApproval
+            ? "PRO upgrade is pending approval. You have reached the free prediction limit."
+            : "Free prediction limit reached. Upgrade to Pro for unlimited predictions.",
+        },
         { status: 403 }
       );
     }
