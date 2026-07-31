@@ -1,6 +1,6 @@
 import { createClient } from "@libsql/client";
 
-const client = createClient({ url: "file:./prisma/dev.db" });
+const client = createClient({ url: "file:./data/dev.db" });
 
 async function main() {
   console.log("Migrating schema...");

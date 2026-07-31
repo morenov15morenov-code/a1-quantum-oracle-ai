@@ -6,7 +6,7 @@ let tableReady = false;
 function getClient(): Client {
   if (!client) {
     client = createClient({
-      url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
+      url: process.env.DATABASE_URL ?? "file:./data/dev.db",
     });
   }
   return client;

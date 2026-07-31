@@ -25,7 +25,7 @@ jobs:
       - name: Build
         run: cd frontend && npm run build
         env:
-          DATABASE_URL: "file:./prisma/dev.db"
+          DATABASE_URL: "file:./data/dev.db"
           AUTH_SECRET: "ci-test-secret-not-for-production"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
       - name: Test
@@ -48,22 +48,22 @@ jobs:
       - name: Build
         run: cd frontend && npm run build
         env:
-          DATABASE_URL: "file:./prisma/dev.db"
+          DATABASE_URL: "file:./data/dev.db"
           AUTH_SECRET: "ci-test-secret-not-for-production"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
           LOGIN_RATE_LIMIT_MAX: "15"
       - name: Push schema
         run: cd frontend && npx drizzle-kit push
         env:
-          DATABASE_URL: "file:./prisma/dev.db"
+          DATABASE_URL: "file:./data/dev.db"
       - name: Seed database
         run: cd frontend && npx tsx scripts/seed.ts
         env:
-          DATABASE_URL: "file:./prisma/dev.db"
+          DATABASE_URL: "file:./data/dev.db"
       - name: Run E2E tests
         run: cd frontend && npx playwright test
         env:
-          DATABASE_URL: "file:./prisma/dev.db"
+          DATABASE_URL: "file:./data/dev.db"
           AUTH_SECRET: "ci-test-secret-not-for-production"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
           LOGIN_RATE_LIMIT_MAX: "15"
@@ -93,7 +93,7 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm run build
         env:
-          DATABASE_URL: "file:./prisma/dev.db"
+          DATABASE_URL: "file:./data/dev.db"
           AUTH_SECRET: "ci-test-secret"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
       - name: Build Electron (Linux)
@@ -129,7 +129,7 @@ jobs:
       - name: Build Docker image
         run: >-
           docker build -f frontend/Dockerfile -t atlas-oracle:latest
-          --build-arg DATABASE_URL="file:./prisma/dev.db"
+          --build-arg DATABASE_URL="file:./data/dev.db"
           --build-arg AUTH_SECRET="ci-test-secret"
           --build-arg NEXT_PUBLIC_APP_URL="http://localhost:3000"
           frontend/

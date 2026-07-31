@@ -1,6 +1,6 @@
 $env:NODE_ENV = "production"
 $env:PORT = "3000"
-$env:DATABASE_URL = "file:./prisma/dev.db"
+$env:DATABASE_URL = "file:./data/dev.db"
 $env:NEXTAUTH_SECRET = "atlas-oracle-dev-secret-change-in-prod"
 $env:NEXTAUTH_URL = "http://localhost:3000"
 $env:OPENAI_API_KEY = "sk-your-openai-api-key"

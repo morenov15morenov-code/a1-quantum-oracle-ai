@@ -25,7 +25,7 @@ Atlas Oracle is a full-stack universal foresight engine — not a market tool, n
 │           │                     │                                 │
 │  ┌────────┴─────────────────────┴───────────────────────────────┐ │
 │  │                    Shared Layer                               │ │
-│  │  components/  lib/  types/  prisma/  scripts/                 │ │
+│  │  components/  lib/  types/  data/  scripts/                      │ │
 │  └───────────────────────────┬──────────────────────────────────┘ │
 └──────────────────────────────┼────────────────────────────────────┘
                                │
@@ -89,7 +89,7 @@ atlas-oracle/                          # Project root
 │   │
 │   ├── types/                         # TypeScript type definitions
 │   ├── drizzle/                       # Drizzle Kit migrations
-│   ├── prisma/                        # SQLite database file (gitignored)
+│   ├── data/                          # SQLite database file (gitignored)
 │   ├── scripts/                       # seed.ts + migrate.ts
 │   ├── assets/                        # App icons
 │   ├── e2e/                           # Playwright end-to-end tests

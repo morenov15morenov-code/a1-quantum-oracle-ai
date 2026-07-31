@@ -13,7 +13,7 @@ npm run db:seed              # seed admin user (admin@atlas-oracle.com / admin12
 npm run dev                  # start dev server on http://localhost:3000
 ```
 
-Requires `DATABASE_URL="file:./prisma/dev.db"` in `.env.local` for database commands.
+Requires `DATABASE_URL="file:./data/dev.db"` in `.env.local` for database commands.
 
 ## Current Status: PRE-DEPLOYMENT HARDENING COMPLETE
 
@@ -25,7 +25,7 @@ Requires `DATABASE_URL="file:./prisma/dev.db"` in `.env.local` for database comm
 | Next.js build (`npm run build`) | Compiled successfully, 40 pages, 21 API routes |
 | Playwright E2E (`npx playwright test --workers=1`) | 56 passed, 2 skipped (Google/GitHub OAuth unconfigured), 0 failed |
 | Prisma → Drizzle Migration | Complete — all routes, tests, and configs updated |
-| Git hygiene | `frontend/prisma/dev.db` untracked from git (contained user data + bcrypt hashes) |
+| Git hygiene | `frontend/data/dev.db` untracked from git (contained user data + bcrypt hashes) |
 
 > **Note**: The `dev.db` removal from tracking is staged (`git rm --cached`) but **not committed yet** — committing is the remaining step.
 
@@ -123,7 +123,7 @@ a8caeee fix: migrate middleware to proxy (Next.js 16)
 - **Prediction share button**, `app/api/sr` endpoint (`lib/sr.ts`), theme toggle component.
 - **Migration script** `scripts/migrate.ts` — backfills `emailVerifyToken`/`emailVerifyExpires` (applied to dev.db).
 - **Tests**: +3 gate test files + middleware/public-route tests + predictions-gate tests → 323 tests / 42 files; e2e 56 passed / 2 skipped.
-- **Git hygiene**: `frontend/prisma/dev.db` (real user data) removed from tracking; `.env.local` gitignored (never committed).
+- **Git hygiene**: `frontend/data/dev.db` (real user data) removed from tracking; `.env.local` gitignored (never committed).
 
 ## Key Architecture Decisions
 

@@ -213,7 +213,7 @@ Atlas Oracle uses **Drizzle ORM** with the **LibSQL adapter**.
 No setup required. The default `DATABASE_URL` points to a local SQLite file:
 
 ```
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="file:./data/dev.db"
 ```
 
 ```bash
