@@ -2,7 +2,7 @@
 
 > A universal foresight engine for anyone facing any decision. Not a market tool. Not a niche app. An oracle for every human question.
 
-Last updated: 2026-08-01
+Last updated: 2026-08-05
 
 ## Quick Start
 
@@ -27,23 +27,27 @@ Requires `DATABASE_URL="file:./data/dev.db"` in `.env.local` for database comman
 | Prisma → Drizzle Migration | Complete — all routes, tests, and configs updated |
 | Git hygiene | `frontend/data/dev.db` untracked from git (contained user data + bcrypt hashes) |
 
-> **Note**: The `dev.db` removal from tracking is staged (`git rm --cached`) but **not committed yet** — committing is the remaining step.
+> **Note**: `frontend/data/dev.db` removal from tracking and the `.env.local` gitignore were committed in `5b455ed`; `frontend/data/.gitkeep` (commit `e1fa181`) keeps the DB dir present in fresh clones/CI so the build-time `@libsql` open (`/api/admin/analytics` page-data collection) succeeds.
 
-### CI Pipeline History
+### CI Pipeline History (recent)
 
-| Run | Commit | check | e2e | electron-build | docker |
-|---|---|---|---|---|---|
-| #6 | c7fa5de | ✅ | ❌ | ❌ | ❌ |
-| #7 | aa47361 | ✅ | ❌ | ❌ | ❌ |
-| #9 | d8e3fe6 | ⏳ | — | — | 🔧 YAML block scalar fix |
-| #10 | bb7f19a | ⏳ | — | 🚧 Dockerfile CMD fix | 🚧 context fix |
-| #11 | 68f0ea5 | ⏳ queued | 🔧 version→uptime | — | — |
+| Run | Commit | check | build | e2e | electron-build | docker |
+|---|---|---|---|---|---|---|
+| #65 | 71b1c3d | ✅ | ✅ | ✅ | ✅ | ❌ (busybox has no `--group`/`--ingroup`) |
+| #66 | 4a53178 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-**Known failures**: e2e test expects `uptime` property but health endpoint returns `version` — fixed in #11 (68f0ea5). Electron-build and docker jobs failing since #6 due to path/context issues — fixes in progress across #9–#10.
+**Final validation**: run #66 (4a53178) fully green — workflow badge reads `CI · passing` for `ci.yml@main`. Docker fix: reverted to `addgroup --system --gid 1001 nodejs` + `adduser --system --uid 1001 nextjs` + `chown -R nextjs:nodejs /app` (busybox-compatible). Pre-#65 failures (e2e `uptime` vs `version`, electron/docker path issues) were all resolved in the earlier run series.
 
 ## Git History
 
 ```
+4a53178 fix(docker): use busybox-compatible addgroup/adduser flags (no --group/--ingroup)
+71b1c3d ci(docker): isolate base-image pull, merge diagnostics into one annotation
+028b86f ci(docker): use --progress=plain and add docker diagnostics to surface real build errors
+6e76efa ci(docker): surface build output as error annotations on failure
+e1fa181 fix(ci): keep frontend/data/ dir in git so builds work on fresh checkouts
+b586d75 chore: rename prisma/ to data/ for DB storage, fix Docker data-dir permissions
+5b455ed feat: production hardening - email verification, subscription gates, DB-backed rate limiting
 68f0ea5 fix: e2e test expects 'version' not 'uptime'
 bb7f19a fix: Dockerfile CMD + electron main.js frontend/ path
 d8e3fe6 fix: YAML folded block scalar for docker build
@@ -190,9 +194,9 @@ npm start
 ## What's Left
 
 ### Immediate (before shipping)
-1. **Commit the current workstream** — including the staged `dev.db` untrack (`git rm --cached`) so the database with user data is no longer in history going forward
-2. **Re-verify CI jobs** — `electron-build` and `docker` jobs in `.github/workflows/ci.yml` have been failing since #6 (path/context issues); validate them on a fresh push
-3. **Decide feature gates** — set `ADMIN_APPROVAL_REQUIRED`, `PAYMENT_GATE_ENABLED`, `EMAIL_VERIFICATION_REQUIRED` to the desired values for production (all default off)
+1. ✅ **Feature gates decided** — `ADMIN_APPROVAL_REQUIRED` off, `EMAIL_VERIFICATION_REQUIRED` off, `PAYMENT_GATE_ENABLED` **on** (production default in `frontend/.env.example`). ⚠️ The payment gate is a guard only — with a valid `STRIPE_SECRET_KEY` it silently bypasses to free activation; without one, PRO upgrades return 402. A real Stripe checkout integration is **not yet implemented** — do not ship with `PAYMENT_GATE_ENABLED=true` and no `STRIPE_SECRET_KEY` unless intentional.
+2. ✅ **CI docker diagnostics trimmed** — removed the `docker pull node:22-alpine` step, `--progress=plain`, and "Surface build errors" annotation from `.github/workflows/ci.yml`.
+3. ✅ **Local re-verification (2026-08-05)** — typecheck 0 errors, lint 0 warnings, vitest 323/323 passed, `next build` compiled (40 pages / 21 API routes), Playwright E2E 56 passed / 2 skipped.
 
 ### Production Environment Setup
 1. Set up Turso database for production
@@ -210,6 +214,13 @@ npm start
 ## Full Commit Log
 
 ```
+4a53178 fix(docker): use busybox-compatible addgroup/adduser flags (no --group/--ingroup)
+71b1c3d ci(docker): isolate base-image pull, merge diagnostics into one annotation
+028b86f ci(docker): use --progress=plain and add docker diagnostics to surface real build errors
+6e76efa ci(docker): surface build output as error annotations on failure
+e1fa181 fix(ci): keep frontend/data/ dir in git so builds work on fresh checkouts
+b586d75 chore: rename prisma/ to data/ for DB storage, fix Docker data-dir permissions
+5b455ed feat: production hardening - email verification, subscription gates, DB-backed rate limiting
 68f0ea5 fix: e2e test expects 'version' not 'uptime' (matches health endpoint response)
 bb7f19a fix: Dockerfile CMD use frontend/server.js, electron main.js use frontend/ path (standalone output has frontend/ prefix due to outputFileTracingRoot)
 d8e3fe6 fix: use YAML folded block scalar for docker build command (no shell continuations)
