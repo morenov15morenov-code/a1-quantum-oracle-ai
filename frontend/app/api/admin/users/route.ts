@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
+import { adminAction } from "@/lib/protocol7";
 import { eq } from "drizzle-orm";
 
 export async function GET(request: Request) {
@@ -55,6 +56,20 @@ export async function PATCH(request: Request) {
 
     if (userId === session.user.id && active === false) {
       return NextResponse.json({ error: "Admin cannot deactivate their own account" }, { status: 400 });
+    }
+
+    const target = await db.select().from(users).where(eq(users.id, userId)).get();
+    if (!target) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const action = target.role === "ADMIN" && active === false ? "remove_authentication" : "update_user_status";
+    const hook = adminAction(action);
+    if (!hook.success) {
+      return NextResponse.json(
+        { error: hook.reason, code: "PROTOCOL7_BLOCKED" },
+        { status: 403 }
+      );
     }
 
     const updated = await db.update(users)

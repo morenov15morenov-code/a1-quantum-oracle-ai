@@ -77,6 +77,7 @@ describe("Admin Users API - PATCH", () => {
   });
 
   it("updates user active status", async () => {
+    dbMock.select.mockReturnValueOnce(mockChain({ id: "user-1", name: "Bob", email: "bob@test.com", role: "USER", active: true }));
     dbMock.update.mockReturnValueOnce(mockChain({ id: "user-1", name: "Bob", email: "bob@test.com", role: "USER", active: false }));
     const response = await PATCH(createPatchRequest({ userId: "user-1", active: false }));
     expect(response.status).toBe(200);
@@ -107,5 +108,32 @@ describe("Admin Users API - PATCH", () => {
     vi.mocked((await import("@/lib/rate-limit")).rateLimit).mockReturnValueOnce({ success: false, remaining: 0 });
     const response = await PATCH(createPatchRequest({ userId: "user-1", active: false }));
     expect(response.status).toBe(429);
+  });
+
+  it("returns 400 when admin tries to deactivate their own account", async () => {
+    const response = await PATCH(createPatchRequest({ userId: "admin-1", active: false }));
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 404 when target user does not exist", async () => {
+    dbMock.select.mockReturnValueOnce(mockChain(null));
+    const response = await PATCH(createPatchRequest({ userId: "missing", active: false }));
+    expect(response.status).toBe(404);
+  });
+
+  it("blocks deactivating an admin via Protocol 7", async () => {
+    dbMock.select.mockReturnValueOnce(mockChain({ id: "admin-2", name: "Carol", email: "carol@test.com", role: "ADMIN", active: true }));
+    const response = await PATCH(createPatchRequest({ userId: "admin-2", active: false }));
+    expect(response.status).toBe(403);
+    const body = await response.json();
+    expect(body.code).toBe("PROTOCOL7_BLOCKED");
+    expect(dbMock.update).not.toHaveBeenCalled();
+  });
+
+  it("allows deactivating a regular user via Protocol 7", async () => {
+    dbMock.select.mockReturnValueOnce(mockChain({ id: "user-1", name: "Bob", email: "bob@test.com", role: "USER", active: true }));
+    dbMock.update.mockReturnValueOnce(mockChain({ id: "user-1", name: "Bob", email: "bob@test.com", role: "USER", active: false }));
+    const response = await PATCH(createPatchRequest({ userId: "user-1", active: false }));
+    expect(response.status).toBe(200);
   });
 });

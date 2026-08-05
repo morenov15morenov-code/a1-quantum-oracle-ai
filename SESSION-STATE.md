@@ -21,7 +21,7 @@ Requires `DATABASE_URL="file:./data/dev.db"` in `.env.local` for database comman
 |---|---|
 | TypeScript (`npx tsc --noEmit`) | 0 errors |
 | ESLint (`npm run lint`) | 0 errors, 0 warnings |
-| Vitest (`npx vitest run`) | 323 passed, 0 failed, 42 files |
+| Vitest (`npx vitest run`) | 368 passed, 0 failed, 48 files |
 | Next.js build (`npm run build`) | Compiled successfully, 40 pages, 21 API routes |
 | Playwright E2E (`npx playwright test --workers=1`) | 56 passed, 2 skipped (Google/GitHub OAuth unconfigured), 0 failed |
 | Prisma → Drizzle Migration | Complete — all routes, tests, and configs updated |
@@ -61,7 +61,7 @@ a8caeee fix: migrate middleware to proxy (Next.js 16)
 ...7f4202d atlas working version
 ```
 
-## What Was Done (11 Phases Complete)
+## What Was Done (15 Phases Complete)
 
 ### Phase 1: Security & Bug Fixes
 - Middleware dual-export fix, API route protection, signup race condition (P2002), pagination NaN/DoS fix, CSP+HSTS, admin guard, password reset token hashing, .dockerignore, analytics groupBy fix, try/catch on unprotected routes
@@ -128,6 +128,26 @@ a8caeee fix: migrate middleware to proxy (Next.js 16)
 - **Migration script** `scripts/migrate.ts` — backfills `emailVerifyToken`/`emailVerifyExpires` (applied to dev.db).
 - **Tests**: +3 gate test files + middleware/public-route tests + predictions-gate tests → 323 tests / 42 files; e2e 56 passed / 2 skipped.
 - **Git hygiene**: `frontend/data/dev.db` (real user data) removed from tracking; `.env.local` gitignored (never committed).
+
+### Phase 13: Protocol 7 (System Stability Guard)
+- **`lib/protocol7.ts`**: protection layer that blocks unsafe/destabilizing admin actions — blocked list: `disable_security`, `remove_authentication`, `delete_logs`, `override_protocol7`. API: `validate()` (boolean), `denyReason()` (message), `assertAllowed()` (403 NextResponse with `code: "PROTOCOL7_BLOCKED"`), and `adminAction()` — the Admin Protection Hook returning `{ success: true }` or `{ success: false, reason: "Protocol 7 restriction" }`. Extensible via constructor for custom blocked lists.
+- **Wired into `/api/admin/users` PATCH**: deactivating an admin account maps to the blocked action `remove_authentication` → 403 via the `adminAction` hook (an admin cannot be deactivated through this endpoint, only regular users). Also added a 404 for unknown targets. Self-deactivation still returns 400.
+- **Admin settings UI** (`/admin/settings`): shows "System Stability Guard — Protocol 7 (active)".
+- **Tests**: +21 (protocol7 unit suite incl. `adminAction` + users-route Protocol 7/404/self-deactivate cases) → 344 tests / 43 files; typecheck, lint, build all green.
+
+### Phase 14: Analytics Architecture (Pipeline)
+- Prediction generation refactored into the **Analytics → Forecast → Response → Protocol 7 → Final Response** pipeline, each stage its own module:
+  - **`lib/analytics-engine.ts`** — gathers intelligence (past predictions + similarity matching), resolves domain/user context, builds the multi-dimensional system prompt. Exports `OracleContext` (moved from `oracle.ts`).
+  - **`lib/forecast-engine.ts`** — generates the raw forecast (result + confidence + reasoning) via `generatePrediction`.
+  - **`lib/response-generator.ts`** — composes the final response (trim, clamp confidence 0–1, safe defaults) and provides `safeFallback()` for declined answers.
+  - **Protocol 7 response validation** (`lib/protocol7.ts` `validateGeneratedResponse`) — scans generated text for destabilizing instructions (`disable security`, `remove authentication`, `delete logs`, `override protocol7` incl. inflections); blocked responses are replaced by a safe fallback so dangerous text never reaches storage.
+  - **`lib/oracle.ts`** — orchestrates the pipeline; `queryOracle` signature unchanged (predictions route, its tests, and `simulate-oracle.ts` untouched).
+- **Tests**: +23 (analytics-engine, forecast-engine, response-generator, oracle-pipeline, protocol7 response validation) → 361 tests / 47 files; typecheck, lint, build all green.
+
+### Phase 15: Secret Admin Trigger
+- **`components/hidden-admin-trigger.tsx`** (client component): an invisible overlay on the landing-page "Atlas Oracle" heading (`aria-hidden`, `data-testid="secret-trigger"`, zero visual footprint). Clicking it 5 times within a 3s-per-click idle window fires `alert("Admin Access Unlocked")`; if the session role is `ADMIN` it then navigates to `/admin/dashboard`. Counter is kept in a ref (no re-renders) and self-resets after firing or after 3s idle. Purely a convenience shortcut — server/proxy `ADMIN` checks remain the real gate.
+- **Wired into `app/page.tsx`**: the `h1` is wrapped in a `relative inline-block` span with `<HiddenAdminTrigger className="absolute inset-0" />`.
+- **Tests**: +7 (`__tests__/components/hidden-admin-trigger.test.tsx` — admin navigate, non-admin/user unauthenticated alert-only, <5 clicks no-op, idle-reset) → 368 tests / 48 files; typecheck, lint clean.
 
 ## Key Architecture Decisions
 

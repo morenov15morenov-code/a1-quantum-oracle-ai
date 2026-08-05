@@ -48,6 +48,10 @@ export default function AdminSettingsPage() {
               <dt className="text-muted-foreground">Error Tracking</dt>
               <dd>{process.env.SENTRY_DSN ? "Sentry (configured)" : "Not configured"}</dd>
             </div>
+            <div className="flex justify-between text-sm">
+              <dt className="text-muted-foreground">System Stability Guard</dt>
+              <dd>Protocol 7 (active)</dd>
+            </div>
           </dl>
         </CardContent>
       </Card>

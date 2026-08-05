@@ -1,12 +1,16 @@
 import Link from "next/link";
+import { HiddenAdminTrigger } from "@/components/hidden-admin-trigger";
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
       <div className="space-y-6 max-w-2xl">
-        <h1 className="text-5xl font-bold tracking-tight">
-          Atlas Oracle
-        </h1>
+        <span className="relative inline-block">
+          <h1 className="text-5xl font-bold tracking-tight">
+            Atlas Oracle
+          </h1>
+          <HiddenAdminTrigger className="absolute inset-0" />
+        </span>
         <p className="text-xl text-muted-foreground">
           A universal foresight engine for anyone facing any decision.
           Ask any question — career, relationships, health, finance, creativity, life —
