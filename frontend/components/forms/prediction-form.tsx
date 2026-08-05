@@ -64,7 +64,7 @@ export function PredictionForm({ onPredictionCreated }: PredictionFormProps) {
   }
 
   return (
-    <Card>
+    <Card className="cosmic-card">
       <CardHeader>
         <CardTitle>Consult the Oracle</CardTitle>
         <CardDescription>

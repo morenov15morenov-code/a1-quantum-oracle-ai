@@ -16,13 +16,6 @@ interface PredictionResultProps {
   showFeedback?: boolean;
 }
 
-function getConfidenceColor(confidence: number | null) {
-  if (confidence === null) return "bg-muted";
-  if (confidence >= 0.8) return "bg-green-500";
-  if (confidence >= 0.6) return "bg-yellow-500";
-  return "bg-red-500";
-}
-
 function getRatingStars(rating: number) {
   return Array.from({ length: 5 }, (_, i) => (
     <svg
@@ -37,38 +30,72 @@ function getRatingStars(rating: number) {
   ));
 }
 
+function getGaugeColor(confidence: number | null) {
+  if (confidence === null) return "text-muted";
+  if (confidence >= 0.8) return "text-emerald-400";
+  if (confidence >= 0.6) return "text-amber-400";
+  if (confidence >= 0.4) return "text-orange-400";
+  return "text-rose-400";
+}
+
+function ConfidenceGauge({ confidence }: { confidence: number | null }) {
+  const pct = confidence === null ? 0 : Math.min(1, Math.max(0, confidence));
+  const R = 20;
+  const C = 2 * Math.PI * R;
+  const color = getGaugeColor(confidence);
+  return (
+    <div className="relative h-16 w-16 shrink-0" role="img" aria-label={`Confidence ${formatConfidence(confidence)}`}>
+      <div className={`absolute inset-0 rounded-full opacity-40 blur-lg ${color}`} aria-hidden="true" />
+      <svg viewBox="0 0 52 52" className={`relative h-16 w-16 -rotate-90 ${color}`} aria-hidden="true">
+        <circle cx="26" cy="26" r={R} fill="none" strokeWidth="5" className="stroke-muted/60" />
+        <circle
+          cx="26"
+          cy="26"
+          r={R}
+          fill="none"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeDasharray={C}
+          strokeDashoffset={C * (1 - pct)}
+          className="stroke-current transition-[stroke-dashoffset] duration-700 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-sm font-semibold">
+        {formatConfidence(confidence)}
+      </div>
+    </div>
+  );
+}
+
 export function PredictionResultCard({ prediction }: PredictionResultProps) {
   return (
-    <Card>
+    <Card className="cosmic-card">
       <CardHeader>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <CardTitle className="text-base">Prediction Result</CardTitle>
             <p className="text-sm text-muted-foreground">{formatDate(prediction.createdAt)}</p>
+            <span className="inline-flex items-center rounded-full border border-cosmic-violet/30 bg-cosmic-violet/10 px-2 py-0.5 text-xs text-cosmic-violet">
+              {prediction.model}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{prediction.model}</span>
-            <div className="flex items-center gap-1.5">
-              <div className={`h-2.5 w-2.5 rounded-full ${getConfidenceColor(prediction.confidence)}`} />
-              <span className="text-sm font-medium">{formatConfidence(prediction.confidence)}</span>
-            </div>
-          </div>
+          <ConfidenceGauge confidence={prediction.confidence} />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <h4 className="mb-1 text-sm font-medium text-muted-foreground">Your Question</h4>
-          <p className="text-sm">{prediction.input}</p>
+        <div className="rounded-lg border border-cosmic-cyan/20 bg-cosmic-cyan/5 px-4 py-3">
+          <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Your Question</h4>
+          <p className="text-sm italic text-foreground/90">{prediction.input}</p>
         </div>
 
         <div>
-          <h4 className="mb-1 text-sm font-medium text-muted-foreground">Prediction</h4>
-          <p className="text-sm leading-relaxed">{prediction.result}</p>
+          <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Prediction</h4>
+          <p className="text-base leading-relaxed">{prediction.result}</p>
         </div>
 
         {prediction.reasoning && (
-          <div>
-            <h4 className="mb-1 text-sm font-medium text-muted-foreground">Reasoning</h4>
+          <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
+            <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Reasoning</h4>
             <p className="text-sm leading-relaxed text-muted-foreground">{prediction.reasoning}</p>
           </div>
         )}
