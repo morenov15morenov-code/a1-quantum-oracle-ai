@@ -60,7 +60,7 @@ export default function DashboardPage() {
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-32 animate-pulse rounded-xl bg-muted" />
+              <div key={i} className="skeleton-card h-32" />
             ))}
           </div>
         ) : predictions.length === 0 ? (

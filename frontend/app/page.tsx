@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HiddenAdminTrigger } from "@/components/hidden-admin-trigger";
 import { OracleOrb } from "@/components/cosmic/oracle-orb";
+import { Reveal } from "@/components/cosmic/reveal";
 
 const features = [
   {
@@ -47,12 +48,12 @@ export default function Home() {
   return (
     <div className="relative flex min-h-screen flex-col items-center overflow-hidden px-4 text-center">
       <div className="relative z-10 mt-10 flex flex-col items-center gap-8 py-16 md:py-20">
-        <div className="w-44 animate-float sm:w-56 md:w-64">
+        <div className="w-44 animate-float sm:w-56 md:w-64 animate-fade-up">
           <OracleOrb />
         </div>
 
         <div className="flex flex-col items-center gap-6">
-          <span className="inline-flex items-center gap-2 rounded-full border border-cosmic-violet/30 bg-cosmic-violet/10 px-4 py-1.5 text-xs font-medium text-cosmic-violet backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-full border border-cosmic-violet/30 bg-cosmic-violet/10 px-4 py-1.5 text-xs font-medium text-cosmic-violet backdrop-blur animate-fade-up [animation-delay:150ms]">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cosmic-violet opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-cosmic-violet" />
@@ -60,20 +61,20 @@ export default function Home() {
             AI-Powered Foresight Engine
           </span>
 
-          <span className="relative inline-block">
+          <span className="relative inline-block animate-fade-up [animation-delay:250ms]">
             <h1 className="text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl">
               <span className="text-gradient">Atlas Oracle</span>
             </h1>
             <HiddenAdminTrigger className="absolute inset-0" />
           </span>
 
-          <p className="max-w-2xl text-lg text-muted-foreground sm:text-xl">
+          <p className="max-w-2xl text-lg text-muted-foreground sm:text-xl animate-fade-up [animation-delay:350ms]">
             A universal foresight engine for anyone facing any decision.
             Ask about your career, your relationships, your money, your health — and receive
             AI-powered predictions with confidence scores and visible reasoning.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3 animate-fade-up [animation-delay:450ms]">
             <Link
               href="/signup"
               className="cta-shine inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-r from-cosmic-violet to-cosmic-cyan px-8 text-sm font-semibold text-white shadow-[0_8px_30px_rgba(124,58,237,0.45)] transition-transform hover:scale-[1.03]"
@@ -88,7 +89,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-2 text-sm text-muted-foreground animate-fade-up [animation-delay:550ms]">
             {domains.map((domain) => (
               <span key={domain} className="inline-flex items-center gap-1.5">
                 <span className="h-1 w-1 rounded-full bg-cosmic-cyan" aria-hidden="true" />
@@ -101,14 +102,16 @@ export default function Home() {
 
       <section className="relative z-10 mx-auto max-w-5xl px-4 pb-20" aria-label="Why Atlas Oracle">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((feature) => (
-            <div key={feature.title} className="cosmic-card glass p-5 text-left">
-              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-cosmic-violet/25 to-cosmic-cyan/25 text-cosmic-cyan">
-                {feature.icon}
+          {features.map((feature, i) => (
+            <Reveal key={feature.title} delay={i * 90}>
+              <div className="cosmic-card glass h-full p-5 text-left">
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-cosmic-violet/25 to-cosmic-cyan/25 text-cosmic-cyan">
+                  {feature.icon}
+                </div>
+                <h2 className="mb-1 text-sm font-semibold">{feature.title}</h2>
+                <p className="text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
               </div>
-              <h2 className="mb-1 text-sm font-semibold">{feature.title}</h2>
-              <p className="text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>

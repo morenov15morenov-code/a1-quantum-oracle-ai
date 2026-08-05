@@ -44,7 +44,7 @@ export default function HistoryPage() {
       {loading ? (
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-32 animate-pulse rounded-xl bg-muted" />
+            <div key={i} className="skeleton-card h-32" />
           ))}
         </div>
       ) : !data || data.predictions.length === 0 ? (
@@ -70,7 +70,7 @@ export default function HistoryPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent disabled:opacity-50"
+                className="glass inline-flex h-9 items-center justify-center rounded-md px-4 text-sm font-medium shadow-sm transition-colors hover:text-cosmic-cyan disabled:opacity-50"
               >
                 Previous
               </button>
@@ -80,7 +80,7 @@ export default function HistoryPage() {
               <button
                 onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
                 disabled={page === data.totalPages}
-                className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent disabled:opacity-50"
+                className="glass inline-flex h-9 items-center justify-center rounded-md px-4 text-sm font-medium shadow-sm transition-colors hover:text-cosmic-cyan disabled:opacity-50"
               >
                 Next
               </button>
