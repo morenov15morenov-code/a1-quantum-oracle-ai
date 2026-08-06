@@ -136,4 +136,23 @@ describe("Admin Users API - PATCH", () => {
     const response = await PATCH(createPatchRequest({ userId: "user-1", active: false }));
     expect(response.status).toBe(200);
   });
+
+  it("promotes a user to admin", async () => {
+    dbMock.select.mockReturnValueOnce(mockChain({ id: "user-1", name: "Bob", email: "bob@test.com", role: "USER", active: true }));
+    dbMock.update.mockReturnValueOnce(mockChain({ id: "user-1", name: "Bob", email: "bob@test.com", role: "ADMIN", active: true }));
+    const response = await PATCH(createPatchRequest({ userId: "user-1", role: "ADMIN" }));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.user.role).toBe("ADMIN");
+  });
+
+  it("rejects invalid role value", async () => {
+    const response = await PATCH(createPatchRequest({ userId: "user-1", role: "SUPERUSER" }));
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 when admin tries to demote their own account", async () => {
+    const response = await PATCH(createPatchRequest({ userId: "admin-1", role: "USER" }));
+    expect(response.status).toBe(400);
+  });
 });

@@ -1,15 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useFetch } from "@/lib/use-fetch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import type { UserProfile } from "@/types";
-import { useRouter } from "next/navigation";
 
 export function UserTable() {
-  const { data, loading } = useFetch<{ users: UserProfile[] }>("/api/admin/users");
-  const router = useRouter();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { data, loading } = useFetch<{ users: UserProfile[] }>("/api/admin/users", [refreshKey]);
 
   async function toggleUserStatus(userId: string, currentStatus: boolean) {
     try {
@@ -19,10 +19,35 @@ export function UserTable() {
         body: JSON.stringify({ userId, active: !currentStatus }),
       });
       if (res.ok) {
-        router.refresh();
+        setRefreshKey((k) => k + 1);
       }
     } catch {
       console.error("Failed to update user");
+    }
+  }
+
+  async function toggleUserRole(user: UserProfile) {
+    const targetRole = user.role === "ADMIN" ? "USER" : "ADMIN";
+    const ok = window.confirm(
+      targetRole === "ADMIN"
+        ? `Grant ADMIN (unlimited predictions) to ${user.email}?`
+        : `Revoke ADMIN from ${user.email}?`
+    );
+    if (!ok) return;
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, role: targetRole }),
+      });
+      if (res.ok) {
+        setRefreshKey((k) => k + 1);
+      } else {
+        const body = await res.json();
+        alert(body.error ?? "Failed to update role");
+      }
+    } catch {
+      console.error("Failed to update role");
     }
   }
 
@@ -82,14 +107,24 @@ export function UserTable() {
                   </td>
                   <td className="py-3 text-muted-foreground">{formatDate(user.createdAt)}</td>
                   <td className="py-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      aria-label={`${user.active ? "Deactivate" : "Activate"} ${user.name}`}
-                      onClick={() => toggleUserStatus(user.id, user.active)}
-                    >
-                      {user.active ? "Deactivate" : "Activate"}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label={`${user.active ? "Deactivate" : "Activate"} ${user.name}`}
+                        onClick={() => toggleUserStatus(user.id, user.active)}
+                      >
+                        {user.active ? "Deactivate" : "Activate"}
+                      </Button>
+                      <Button
+                        variant={user.role === "ADMIN" ? "outline" : "default"}
+                        size="sm"
+                        aria-label={`${user.role === "ADMIN" ? "Revoke admin from" : "Make admin"} ${user.name}`}
+                        onClick={() => toggleUserRole(user)}
+                      >
+                        {user.role === "ADMIN" ? "Revoke Admin" : "Make Admin"}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

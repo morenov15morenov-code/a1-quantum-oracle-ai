@@ -48,14 +48,17 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { userId, active } = await request.json();
+    const { userId, active, role } = await request.json();
 
-    if (!userId || typeof active !== "boolean") {
-      return NextResponse.json({ error: "userId and active (boolean) are required" }, { status: 400 });
+    const hasActive = typeof active === "boolean";
+    const hasRole = typeof role === "string" && (role === "USER" || role === "ADMIN");
+
+    if (!userId || (!hasActive && !hasRole)) {
+      return NextResponse.json({ error: "userId and active (boolean) and/or role (USER | ADMIN) are required" }, { status: 400 });
     }
 
-    if (userId === session.user.id && active === false) {
-      return NextResponse.json({ error: "Admin cannot deactivate their own account" }, { status: 400 });
+    if (userId === session.user.id && (active === false || role === "USER")) {
+      return NextResponse.json({ error: "Admin cannot deactivate or demote their own account" }, { status: 400 });
     }
 
     const target = await db.select().from(users).where(eq(users.id, userId)).get();
@@ -63,7 +66,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const action = target.role === "ADMIN" && active === false ? "remove_authentication" : "update_user_status";
+    const action = role === "ADMIN" ? "promote_to_admin" : target.role === "ADMIN" && active === false ? "remove_authentication" : "update_user_status";
     const hook = adminAction(action);
     if (!hook.success) {
       return NextResponse.json(
@@ -72,8 +75,12 @@ export async function PATCH(request: Request) {
       );
     }
 
+    const updates: { active?: boolean; role?: string } = {};
+    if (hasActive) updates.active = active;
+    if (hasRole) updates.role = role;
+
     const updated = await db.update(users)
-      .set({ active })
+      .set(updates)
       .where(eq(users.id, userId))
       .returning()
       .get();
