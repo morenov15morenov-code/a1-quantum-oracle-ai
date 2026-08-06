@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OracleSummon } from "@/components/cosmic/oracle-summon";
 
 const DOMAIN_OPTIONS = [
   "Career & Work",
@@ -130,9 +131,15 @@ export function PredictionForm({ onPredictionCreated }: PredictionFormProps) {
             <p className="text-xs text-muted-foreground">{context.length}/5000 &mdash; The more context you provide, the more unique and accurate your prediction will be</p>
           </div>
 
-          <Button type="submit" disabled={loading || !input.trim()}>
-            {loading ? "Consulting the Oracle..." : "Get Prediction"}
-          </Button>
+          <div className="flex items-center justify-center py-2">
+            {loading ? (
+              <OracleSummon />
+            ) : (
+              <Button type="submit" disabled={!input.trim()} className="w-full">
+                Get Prediction
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>

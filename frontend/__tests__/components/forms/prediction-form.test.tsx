@@ -118,8 +118,8 @@ describe("PredictionForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /get prediction/i }));
 
     await waitFor(() => {
-      const btn = screen.getByRole("button", { name: /consulting the oracle/i });
-      expect((btn as HTMLButtonElement).disabled).toBe(true);
+      const status = screen.getByRole("status");
+      expect(status.textContent).toMatch(/consulting the oracle/i);
     });
   });
 
