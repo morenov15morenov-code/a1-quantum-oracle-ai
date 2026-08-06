@@ -3,9 +3,8 @@ import { db } from "@/lib/db";
 import { subscriptions, users, analyticsEvents } from "@/lib/schema";
 import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
+import { FREE_PRED_LIMIT, PRO_PRED_LIMIT } from "@/lib/subscription";
 import { eq } from "drizzle-orm";
-
-const PRO_PRED_LIMIT = 100;
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -72,7 +71,7 @@ export async function PATCH(request: Request) {
     const updated = await db.update(subscriptions)
       .set({
         status,
-        predsLimit: status === "ACTIVE" ? PRO_PRED_LIMIT : 5,
+        predsLimit: status === "ACTIVE" ? PRO_PRED_LIMIT : FREE_PRED_LIMIT,
         periodStart: status === "ACTIVE" ? new Date() : sub.periodStart,
         periodEnd: null,
       })

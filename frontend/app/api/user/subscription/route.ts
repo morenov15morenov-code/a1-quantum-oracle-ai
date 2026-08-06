@@ -4,9 +4,8 @@ import { db } from "@/lib/db";
 import { subscriptions, analyticsEvents } from "@/lib/schema";
 import { subscriptionSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
+import { FREE_PRED_LIMIT, PRO_PRED_LIMIT, refreshSubscription } from "@/lib/subscription";
 import { eq } from "drizzle-orm";
-
-const PRO_PRED_LIMIT = 100;
 
 export async function GET() {
   const session = await auth();
@@ -15,24 +14,7 @@ export async function GET() {
   }
 
   try {
-    let subscription = await db.select().from(subscriptions)
-      .where(eq(subscriptions.userId, session.user.id))
-      .get();
-
-    if (!subscription) {
-      subscription = await db.insert(subscriptions)
-        .values({ userId: session.user.id })
-        .returning()
-        .get();
-    }
-
-    if (subscription.periodEnd && new Date() > subscription.periodEnd) {
-      subscription = await db.update(subscriptions)
-        .set({ predsUsed: 0, periodStart: new Date(), periodEnd: null })
-        .where(eq(subscriptions.userId, session.user.id))
-        .returning()
-        .get();
-    }
+    const subscription = await refreshSubscription(session.user.id);
 
     return NextResponse.json(subscription);
   } catch (error) {
@@ -74,7 +56,7 @@ export async function POST(request: Request) {
 
     const needsApproval = tier === "PRO" && process.env.ADMIN_APPROVAL_REQUIRED === "true";
     const status = needsApproval ? "PENDING" : "ACTIVE";
-    const predsLimit = tier === "PRO" && status === "ACTIVE" ? PRO_PRED_LIMIT : 5;
+    const predsLimit = tier === "PRO" && status === "ACTIVE" ? PRO_PRED_LIMIT : FREE_PRED_LIMIT;
 
     const existing = await db.select().from(subscriptions)
       .where(eq(subscriptions.userId, session.user.id))

@@ -5,23 +5,9 @@ import { predictions, subscriptions, analyticsEvents } from "@/lib/schema";
 import { queryOracle } from "@/lib/oracle";
 import { oracleQuerySchema } from "@/lib/validations";
 import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
+import { refreshSubscription, nextFreeRefill } from "@/lib/subscription";
 import { parsePagination, paginationError } from "@/lib/pagination";
 import { eq, sql } from "drizzle-orm";
-
-async function getOrCreateSubscription(userId: string) {
-  let sub = await db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).get();
-  if (!sub) {
-    sub = await db.insert(subscriptions).values({ userId }).returning().get();
-  }
-  if (sub.periodEnd && new Date() > sub.periodEnd) {
-    sub = await db.update(subscriptions)
-      .set({ predsUsed: 0, periodStart: new Date(), periodEnd: null })
-      .where(eq(subscriptions.userId, userId))
-      .returning()
-      .get();
-  }
-  return sub;
-}
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -36,7 +22,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const subscription = await getOrCreateSubscription(session.user.id);
+    const subscription = await refreshSubscription(session.user.id);
+
+    const isAdmin = session.user.role === "ADMIN";
 
     if (process.env.EMAIL_VERIFICATION_REQUIRED === "true" && !session.user.emailVerified) {
       return NextResponse.json(
@@ -45,13 +33,18 @@ export async function POST(request: Request) {
       );
     }
 
-    if ((subscription.tier === "FREE" || subscription.status === "PENDING") && subscription.predsUsed >= subscription.predsLimit) {
+    if (!isAdmin && (subscription.tier === "FREE" || subscription.status === "PENDING") && subscription.predsUsed >= subscription.predsLimit) {
       const pendingApproval = subscription.status === "PENDING";
+      const nextRefill = nextFreeRefill(subscription.periodStart);
+      const remainingMs = Math.max(0, nextRefill.getTime() - Date.now());
+      const days = Math.floor(remainingMs / 86400000);
+      const hours = Math.floor((remainingMs % 86400000) / 3600000);
       return NextResponse.json(
         {
           error: pendingApproval
             ? "PRO upgrade is pending approval. You have reached the free prediction limit."
-            : "Free prediction limit reached. Upgrade to Pro for unlimited predictions.",
+            : `Free prediction limit reached. Your next free question unlocks in ${days}d ${hours}h. Upgrade to Pro for unlimited predictions.`,
+          nextFreeInMs: remainingMs,
         },
         { status: 403 }
       );

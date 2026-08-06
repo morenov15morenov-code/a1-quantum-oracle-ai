@@ -91,13 +91,13 @@ describe("Admin Subscriptions API - PATCH", () => {
       id: "sub-1", userId: "user-1", tier: "PRO", status: "PENDING", predsUsed: 0, predsLimit: 5, periodStart: new Date(), periodEnd: null,
     }));
     dbMock.update.mockReturnValueOnce(mockChain({
-      id: "sub-1", userId: "user-1", tier: "PRO", status: "REJECTED", predsUsed: 0, predsLimit: 5, periodStart: new Date(), periodEnd: null,
+      id: "sub-1", userId: "user-1", tier: "PRO", status: "REJECTED", predsUsed: 0, predsLimit: 1, periodStart: new Date(), periodEnd: null,
     }));
     const response = await PATCH(createPatchRequest({ userId: "user-1", status: "REJECTED" }));
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.subscription.status).toBe("REJECTED");
-    expect(body.subscription.predsLimit).toBe(5);
+    expect(body.subscription.predsLimit).toBe(1);
   });
 
   it("returns 400 for invalid status", async () => {

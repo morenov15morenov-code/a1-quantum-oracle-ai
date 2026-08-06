@@ -54,7 +54,7 @@ export const subscriptions = sqliteTable("Subscription", {
   tier: text("tier").notNull().default("FREE"),
   status: text("status").notNull().default("ACTIVE"),
   predsUsed: integer("predsUsed").notNull().default(0),
-  predsLimit: integer("predsLimit").notNull().default(5),
+  predsLimit: integer("predsLimit").notNull().default(1),
   periodStart: integer("periodStart", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
   periodEnd: integer("periodEnd", { mode: "timestamp_ms" }),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),

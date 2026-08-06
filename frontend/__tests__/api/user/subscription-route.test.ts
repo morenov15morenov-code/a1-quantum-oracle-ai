@@ -158,7 +158,7 @@ describe("Subscription API - POST", () => {
     vi.stubEnv("ADMIN_APPROVAL_REQUIRED", "true");
     mockDb.select.mockReturnValue(mockChain(null));
     mockDb.insert.mockReturnValue(mockChain({
-      id: "sub-1", userId: "user-1", tier: "PRO", status: "PENDING", predsUsed: 0, predsLimit: 5, periodStart: new Date(), periodEnd: null,
+      id: "sub-1", userId: "user-1", tier: "PRO", status: "PENDING", predsUsed: 0, predsLimit: 1, periodStart: new Date(), periodEnd: null,
     }));
 
     const response = await POST(
@@ -169,7 +169,7 @@ describe("Subscription API - POST", () => {
     expect(response.status).toBe(200);
     expect(body.tier).toBe("PRO");
     expect(body.status).toBe("PENDING");
-    expect(body.predsLimit).toBe(5);
+    expect(body.predsLimit).toBe(1);
     vi.unstubAllEnvs();
   });
 
