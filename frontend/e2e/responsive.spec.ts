@@ -6,7 +6,7 @@ test.describe("Responsive design", () => {
     await page.goto("/");
     await expect(page.getByText("Atlas Oracle")).toBeVisible();
     await expect(page.getByText("Sign In")).toBeVisible();
-    await expect(page.getByText("Get Started")).toBeVisible();
+    await expect(page.getByText("Consult the Oracle")).toBeVisible();
   });
 
   test("login page is responsive on mobile", async ({ page }) => {

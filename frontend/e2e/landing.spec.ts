@@ -6,10 +6,10 @@ test.describe("Landing page", () => {
     await expect(page.getByText("Atlas Oracle")).toBeVisible();
   });
 
-  test("shows sign in and get started buttons", async ({ page }) => {
+  test("shows sign in and consult the oracle buttons", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText("Sign In")).toBeVisible();
-    await expect(page.getByText("Get Started")).toBeVisible();
+    await expect(page.getByText("Consult the Oracle")).toBeVisible();
   });
 
   test("navigates to login page", async ({ page }) => {
@@ -20,7 +20,7 @@ test.describe("Landing page", () => {
 
   test("navigates to signup page", async ({ page }) => {
     await page.goto("/");
-    await page.getByText("Get Started").click();
+    await page.getByText("Consult the Oracle").click();
     await expect(page).toHaveURL("/signup");
   });
 
