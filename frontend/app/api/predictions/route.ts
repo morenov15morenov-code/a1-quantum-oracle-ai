@@ -5,7 +5,7 @@ import { predictions, subscriptions, analyticsEvents } from "@/lib/schema";
 import { queryOracle } from "@/lib/oracle";
 import { oracleQuerySchema } from "@/lib/validations";
 import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
-import { refreshSubscription, nextFreeRefill } from "@/lib/subscription";
+import { refreshSubscription, nextFreeRefill, isAdminUser } from "@/lib/subscription";
 import { parsePagination, paginationError } from "@/lib/pagination";
 import { eq, sql } from "drizzle-orm";
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   try {
     const subscription = await refreshSubscription(session.user.id);
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = isAdminUser(session);
 
     if (process.env.EMAIL_VERIFICATION_REQUIRED === "true" && !session.user.emailVerified) {
       return NextResponse.json(

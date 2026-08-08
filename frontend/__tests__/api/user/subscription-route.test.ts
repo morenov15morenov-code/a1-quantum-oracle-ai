@@ -60,7 +60,7 @@ describe("Subscription API - GET", () => {
 
   it("returns existing subscription", async () => {
     mockDb.select.mockReturnValue(mockChain({
-      id: "sub-1", userId: "user-1", tier: "FREE", predsUsed: 3, predsLimit: 5, periodStart: new Date(), periodEnd: null,
+      id: "sub-1", userId: "user-1", tier: "FREE", predsUsed: 0, predsLimit: 1, periodStart: new Date(), periodEnd: null,
     }));
 
     const response = await GET();
@@ -68,13 +68,30 @@ describe("Subscription API - GET", () => {
 
     expect(response.status).toBe(200);
     expect(body.tier).toBe("FREE");
+    expect(body.predsLimit).toBe(1);
+  });
+
+  it("normalizes a stale free subscription limit from 5 to 1 on read", async () => {
+    mockDb.select.mockReturnValue(mockChain({
+      id: "sub-1", userId: "user-1", tier: "FREE", predsUsed: 3, predsLimit: 5, periodStart: new Date(), periodEnd: null,
+    }));
+    mockDb.update.mockReturnValue(mockChain({
+      id: "sub-1", userId: "user-1", tier: "FREE", predsUsed: 3, predsLimit: 1, periodStart: new Date(), periodEnd: null,
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(mockDb.update).toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(body.predsLimit).toBe(1);
     expect(body.predsUsed).toBe(3);
   });
 
   it("creates subscription if none exists", async () => {
     mockDb.select.mockReturnValue(mockChain(null));
     mockDb.insert.mockReturnValue(mockChain({
-      id: "sub-1", userId: "user-1", tier: "FREE", predsUsed: 0, predsLimit: 5, periodStart: new Date(), periodEnd: null,
+      id: "sub-1", userId: "user-1", tier: "FREE", predsUsed: 0, predsLimit: 1, periodStart: new Date(), periodEnd: null,
     }));
 
     const response = await GET();

@@ -52,7 +52,7 @@ function createGetRequest(url: string) {
   return new Request(url, { method: "GET" });
 }
 
-const subData = { id: "sub-1", userId: "user-1", tier: "FREE", predsUsed: 0, predsLimit: 5, periodStart: new Date(), periodEnd: null };
+const subData = { id: "sub-1", userId: "user-1", tier: "FREE", predsUsed: 0, predsLimit: 1, periodStart: new Date(), periodEnd: null };
 
 describe("Predictions API - POST", () => {
   beforeEach(() => {
@@ -106,10 +106,60 @@ describe("Predictions API - POST", () => {
     expect(analyticsMock.values).toHaveBeenCalled();
   });
 
-  it("rejects when free tier limit reached", async () => {
-    dbMock.select.mockReturnValue(selectChain({ ...subData, tier: "FREE", predsUsed: 5, predsLimit: 5, periodEnd: null }));
+  it("rejects when free tier weekly limit reached", async () => {
+    dbMock.select.mockReturnValue(selectChain({ ...subData, tier: "FREE", predsUsed: 1, predsLimit: 1, periodEnd: null }));
     const response = await POST(createAuthRequest({ input: "What will happen next quarter?" }));
     expect(response.status).toBe(403);
+  });
+
+  it("normalizes stale free subscription limit from 5 to 1 before blocking a used week", async () => {
+    dbMock.select.mockReturnValue(selectChain({ ...subData, tier: "FREE", predsUsed: 5, predsLimit: 5, periodEnd: null }));
+    dbMock.update.mockReturnValueOnce(updateChain({ ...subData, tier: "FREE", predsUsed: 5, predsLimit: 1, periodEnd: null }));
+    const response = await POST(createAuthRequest({ input: "What will happen next quarter?" }));
+    expect(dbMock.update).toHaveBeenCalled();
+    expect(response.status).toBe(403);
+  });
+
+  it("normalizes stale free subscription limit from 5 to 1 and allows an unused week", async () => {
+    mockOracle.mockResolvedValue({ result: "Forecast result", confidence: 0.7, reasoning: "Reasoning" });
+    dbMock.select.mockReturnValue(selectChain({ ...subData, tier: "FREE", predsUsed: 0, predsLimit: 5, periodEnd: null }));
+    dbMock.update
+      .mockReturnValueOnce(updateChain({ ...subData, tier: "FREE", predsUsed: 0, predsLimit: 1, periodEnd: null }))
+      .mockReturnValueOnce(updateChain(undefined));
+    dbMock.insert
+      .mockReturnValueOnce(insertChain({ id: "pred-1", userId: "user-1", input: "What will happen next quarter?", result: "Forecast result", confidence: 0.7, reasoning: "Reasoning", model: "mock" }))
+      .mockReturnValueOnce(insertChain(undefined));
+
+    const response = await POST(createAuthRequest({ input: "What will happen next quarter?" }));
+    expect(response.status).toBe(201);
+  });
+
+  it("allows ADMIN users to bypass the free limit", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1", role: "ADMIN", email: "admin@atlas-oracle.com" } });
+    mockOracle.mockResolvedValue({ result: "Forecast result", confidence: 0.7, reasoning: "Reasoning" });
+    dbMock.select.mockReturnValue(selectChain({ ...subData, tier: "FREE", predsUsed: 1, predsLimit: 1, periodEnd: null }));
+    dbMock.update.mockReturnValueOnce(updateChain(undefined));
+    dbMock.insert
+      .mockReturnValueOnce(insertChain({ id: "pred-1", userId: "user-1", input: "What will happen next quarter?", result: "Forecast result", confidence: 0.7, reasoning: "Reasoning", model: "mock" }))
+      .mockReturnValueOnce(insertChain(undefined));
+
+    const response = await POST(createAuthRequest({ input: "What will happen next quarter?" }));
+    expect(response.status).toBe(201);
+  });
+
+  it("allows emails listed in ADMIN_EMAILS to bypass the free limit", async () => {
+    vi.stubEnv("ADMIN_EMAILS", "admin@atlas-oracle.com, second@example.com");
+    mockAuth.mockResolvedValue({ user: { id: "user-1", role: "USER", email: "admin@atlas-oracle.com" } });
+    mockOracle.mockResolvedValue({ result: "Forecast result", confidence: 0.7, reasoning: "Reasoning" });
+    dbMock.select.mockReturnValue(selectChain({ ...subData, tier: "FREE", predsUsed: 1, predsLimit: 1, periodEnd: null }));
+    dbMock.update.mockReturnValueOnce(updateChain(undefined));
+    dbMock.insert
+      .mockReturnValueOnce(insertChain({ id: "pred-1", userId: "user-1", input: "What will happen next quarter?", result: "Forecast result", confidence: 0.7, reasoning: "Reasoning", model: "mock" }))
+      .mockReturnValueOnce(insertChain(undefined));
+
+    const response = await POST(createAuthRequest({ input: "What will happen next quarter?" }));
+    expect(response.status).toBe(201);
+    vi.unstubAllEnvs();
   });
 
   it("allows pro users to create predictions", async () => {
