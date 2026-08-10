@@ -32,7 +32,7 @@ test.describe("Navigation", () => {
 
   test("404 page renders for unknown routes", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);

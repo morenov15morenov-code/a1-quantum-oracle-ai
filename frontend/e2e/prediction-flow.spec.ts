@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Prediction flow", () => {
   test("prediction form shows character count", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
@@ -14,7 +14,7 @@ test.describe("Prediction flow", () => {
 
   test("prediction form validates min length", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
@@ -27,7 +27,7 @@ test.describe("Prediction flow", () => {
 
   test("dashboard shows user greeting", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
@@ -37,7 +37,7 @@ test.describe("Prediction flow", () => {
 
   test("settings page is accessible from dashboard", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
@@ -48,7 +48,7 @@ test.describe("Prediction flow", () => {
 
   test("history page is accessible from dashboard", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
@@ -59,7 +59,7 @@ test.describe("Prediction flow", () => {
 
   test("prediction form textarea updates character count", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
@@ -71,7 +71,7 @@ test.describe("Prediction flow", () => {
 
   test("prediction form requires non-empty input", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);

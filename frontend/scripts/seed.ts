@@ -12,7 +12,7 @@ async function main() {
 
   console.log("Seeding database...");
 
-  const adminEmail = "admin@atlas-oracle.com";
+  const adminEmail = "admin@a1quantumoracleai.com";
   const existing = await db.select().from(users).where(eq(users.email, adminEmail)).get();
 
   if (existing) {
@@ -30,7 +30,7 @@ async function main() {
   }).run();
 
   console.log("Admin user created:");
-  console.log("  Email: admin@atlas-oracle.com");
+  console.log("  Email: admin@a1quantumoracleai.com");
   console.log("  Password: admin123");
   console.log("  NOTE: Change this password immediately in production!");
 }

@@ -4,7 +4,7 @@ test.describe("Responsive design", () => {
   test("landing page is responsive on mobile", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/");
-    await expect(page.getByText("Atlas Oracle")).toBeVisible();
+    await expect(page.getByText("A1 Quantum Oracle AI")).toBeVisible();
     await expect(page.getByText("Sign In")).toBeVisible();
     await expect(page.getByText("Consult the Oracle")).toBeVisible();
   });
@@ -28,7 +28,7 @@ test.describe("Responsive design", () => {
   test("dashboard is responsive on mobile", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/dashboard/);
@@ -39,7 +39,7 @@ test.describe("Responsive design", () => {
   test("landing page works on tablet", async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto("/");
-    await expect(page.getByText("Atlas Oracle")).toBeVisible();
+    await expect(page.getByText("A1 Quantum Oracle AI")).toBeVisible();
   });
 });
 

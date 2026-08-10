@@ -1,4 +1,4 @@
-# Atlas Oracle
+# A1 Quantum Oracle AI
 
 **A universal foresight engine for anyone facing any decision.**
 
@@ -57,7 +57,7 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000).
 
 **Default admin credentials:**
-Email: `admin@atlas-oracle.com`
+Email: `admin@a1quantumoracleai.com`
 Password: `admin123`
 
 ---
@@ -192,7 +192,7 @@ The **Settings** page (`/admin/settings`) displays read-only platform informatio
 | `OPENAI_API_KEY` | No | OpenAI API key for GPT-4o predictions; omit to use mock predictions |
 | `NEXT_PUBLIC_APP_URL` | Yes | Public URL of the app (e.g., `http://localhost:3000` or `https://your-app.vercel.app`) |
 | `RESEND_API_KEY` | No | Resend API key for email delivery (password reset, welcome emails) |
-| `RESEND_FROM_EMAIL` | No | Sender address for emails (default: `Atlas Oracle <noreply@atlas-oracle.com>`) |
+| `RESEND_FROM_EMAIL` | No | Sender address for emails (default: `A1 Quantum Oracle AI <noreply@a1quantumoracleai.com>`) |
 | `SENTRY_DSN` | No | Sentry DSN for error tracking |
 | `SENTRY_ORG` | No | Sentry organization slug |
 | `SENTRY_PROJECT` | No | Sentry project slug |
@@ -206,7 +206,7 @@ The **Settings** page (`/admin/settings`) displays read-only platform informatio
 
 ## Database
 
-Atlas Oracle uses **Drizzle ORM** with the **LibSQL adapter**.
+A1 Quantum Oracle AI uses **Drizzle ORM** with the **LibSQL adapter**.
 
 ### Local Development (SQLite)
 
@@ -234,9 +234,9 @@ For Vercel and other serverless platforms, use **Turso** (free tier available):
 1. Sign up at [turso.tech](https://turso.tech)
 2. Install the Turso CLI: `curl -sSfL https://get.tur.so/install.sh | bash`
 3. Log in: `turso auth login`
-4. Create a database: `turso db create atlas-oracle`
-5. Get the URL: `turso db show atlas-oracle --url`
-6. Create an auth token: `turso db tokens create atlas-oracle`
+4. Create a database: `turso db create a1-quantum-oracle-ai`
+5. Get the URL: `turso db show a1-quantum-oracle-ai --url`
+6. Create an auth token: `turso db tokens create a1-quantum-oracle-ai`
 7. Set `DATABASE_URL` in Vercel:
    ```
    libsql://your-db-name-your-org.turso.io?authToken=your-token
@@ -314,12 +314,12 @@ Or manually:
 
 ```bash
 cd frontend
-docker build -t atlas-oracle .
+docker build -t a1-quantum-oracle-ai .
 docker run -p 3000:3000 \
   -e DATABASE_URL="file:/app/data/dev.db" \
   -e AUTH_SECRET="your-secret" \
   -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
-  atlas-oracle
+  a1-quantum-oracle-ai
 ```
 
 ### Build locally

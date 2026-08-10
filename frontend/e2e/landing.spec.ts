@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Landing page", () => {
   test("renders the landing page with title", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText("Atlas Oracle")).toBeVisible();
+    await expect(page.getByText("A1 Quantum Oracle AI")).toBeVisible();
   });
 
   test("shows sign in and consult the oracle buttons", async ({ page }) => {

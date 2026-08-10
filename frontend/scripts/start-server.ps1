@@ -1,20 +1,20 @@
 $env:NODE_ENV = "production"
 $env:PORT = "3000"
 $env:DATABASE_URL = "file:./data/dev.db"
-$env:NEXTAUTH_SECRET = "atlas-oracle-dev-secret-change-in-prod"
+$env:NEXTAUTH_SECRET = "a1-quantum-oracle-ai-dev-secret-change-in-prod"
 $env:NEXTAUTH_URL = "http://localhost:3000"
 $env:OPENAI_API_KEY = "sk-your-openai-api-key"
 
 $proc = Start-Process -FilePath "node" -ArgumentList ".next/standalone/frontend/server.js" `
-  -WorkingDirectory "C:\Users\EL GALACTICO15\atlas-oracle\frontend" `
-  -RedirectStandardOutput "$env:TEMP\atlas-out.log" `
-  -RedirectStandardError "$env:TEMP\atlas-err.log" `
+  -WorkingDirectory "C:\Users\EL GALACTICO15\a1-quantum-oracle-ai\frontend" `
+  -RedirectStandardOutput "$env:TEMP\a1-quantum-oracle-ai-out.log" `
+  -RedirectStandardError "$env:TEMP\a1-quantum-oracle-ai-err.log" `
   -PassThru
 
 Start-Sleep -Seconds 4
 
 Write-Host "=== Server Startup ==="
-Get-Content "$env:TEMP\atlas-out.log" -ErrorAction SilentlyContinue
+Get-Content "$env:TEMP\a1-quantum-oracle-ai-out.log" -ErrorAction SilentlyContinue
 
 Write-Host "`n=== Health Check ==="
 try {
@@ -34,6 +34,6 @@ try {
 
 Start-Sleep -Seconds 2
 Write-Host "`n=== Error Log ==="
-Get-Content "$env:TEMP\atlas-err.log" -ErrorAction SilentlyContinue
+Get-Content "$env:TEMP\a1-quantum-oracle-ai-err.log" -ErrorAction SilentlyContinue
 
 $proc.Kill()

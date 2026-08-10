@@ -26,7 +26,7 @@ describe("Navbar", () => {
   it("renders the app name", () => {
     mockUseSession.mockReturnValue({ data: null });
     render(<Navbar />);
-    expect(screen.getByText("Atlas Oracle")).toBeDefined();
+    expect(screen.getByText("A1 Quantum Oracle AI")).toBeDefined();
   });
 
   it("renders navigation links", () => {

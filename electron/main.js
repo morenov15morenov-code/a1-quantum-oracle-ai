@@ -29,7 +29,7 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    title: "Atlas Oracle",
+    title: "A1 Quantum Oracle AI",
     icon: path.join(__dirname, "..", "frontend", "assets", "icons", "icon.png"),
     webPreferences: {
       nodeIntegration: false,

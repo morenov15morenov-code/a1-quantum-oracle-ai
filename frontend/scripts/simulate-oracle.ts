@@ -51,7 +51,7 @@ async function seedPredictions(sysUserId: string) {
 
 async function main() {
   console.log("═══════════════════════════════════════════════════════════════");
-  console.log("  ATLAS ORACLE — Self-Learning Simulation v2");
+  console.log("  A1 QUANTUM ORACLE AI — Self-Learning Simulation v2");
   console.log("  With stored predictions for similarity matching");
   console.log("═══════════════════════════════════════════════════════════════\n");
 

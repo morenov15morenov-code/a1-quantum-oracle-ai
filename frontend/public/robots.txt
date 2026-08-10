@@ -5,4 +5,4 @@ Disallow: /dashboard/
 Disallow: /history/
 Disallow: /settings/
 
-Sitemap: https://atlas-oracle.vercel.app/sitemap.xml
+Sitemap: https://a1quantumoracleai.com/sitemap.xml

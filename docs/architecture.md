@@ -1,8 +1,8 @@
-# Atlas Oracle — System Architecture
+# A1 Quantum Oracle AI — System Architecture
 
 ## Overview
 
-Atlas Oracle is a full-stack universal foresight engine — not a market tool, not a niche app, but an oracle for every human question. Ask anything: career moves, relationship decisions, health choices, financial planning, creative pursuits, education paths, family matters, or business strategy. The Oracle delivers AI-powered predictions with confidence scores and transparent reasoning to anyone facing any decision.
+A1 Quantum Oracle AI is a full-stack universal foresight engine — not a market tool, not a niche app, but an oracle for every human question. Ask anything: career moves, relationship decisions, health choices, financial planning, creative pursuits, education paths, family matters, or business strategy. The Oracle delivers AI-powered predictions with confidence scores and transparent reasoning to anyone facing any decision.
 
 ---
 
@@ -43,7 +43,7 @@ Atlas Oracle is a full-stack universal foresight engine — not a market tool, n
 ## Directory Structure
 
 ```
-atlas-oracle/                          # Project root
+a1-quantum-oracle-ai/                          # Project root
 ├── frontend/                          # Next.js 16 application (self-contained)
 │   ├── app/                           # App Router pages & API routes
 │   │   ├── (auth)/                    # Login, Signup pages (centered layout)

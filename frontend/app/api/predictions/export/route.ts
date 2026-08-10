@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     return new NextResponse(csv, {
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="atlas-oracle-predictions-${new Date().toISOString().split("T")[0]}.csv"`,
+        "Content-Disposition": `attachment; filename="a1-quantum-oracle-ai-predictions-${new Date().toISOString().split("T")[0]}.csv"`,
       },
     });
   }
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
   return new NextResponse(JSON.stringify(exportData, null, 2), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="atlas-oracle-predictions-${new Date().toISOString().split("T")[0]}.json"`,
+      "Content-Disposition": `attachment; filename="a1-quantum-oracle-ai-predictions-${new Date().toISOString().split("T")[0]}.json"`,
     },
   });
 }

@@ -1,6 +1,6 @@
-appId: com.atlas-oracle.app
-productName: Atlas Oracle
-copyright: Copyright © 2026 Atlas Oracle
+appId: com.a1quantumoracleai.app
+productName: A1 Quantum Oracle AI
+copyright: Copyright © 2026 A1 Quantum Oracle AI
 npmRebuild: false
 
 directories:
@@ -55,6 +55,6 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
-  shortcutName: Atlas Oracle
+  shortcutName: A1 Quantum Oracle AI
 
 publish: null

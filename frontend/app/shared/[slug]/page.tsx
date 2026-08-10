@@ -22,11 +22,11 @@ export async function generateMetadata({
 
   const prediction = result[0];
   if (!prediction) {
-    return { title: "Prediction Not Found - Atlas Oracle" };
+    return { title: "Prediction Not Found - A1 Quantum Oracle AI" };
   }
 
   return {
-    title: `Shared Prediction - Atlas Oracle`,
+    title: `Shared Prediction - A1 Quantum Oracle AI`,
     description: prediction.input,
   };
 }
@@ -57,7 +57,7 @@ export default async function SharedPredictionPage({
               href="/"
               className="mt-4 inline-block text-sm text-primary hover:underline"
             >
-              Go to Atlas Oracle
+              Go to A1 Quantum Oracle AI
             </Link>
           </CardContent>
         </Card>
@@ -69,7 +69,7 @@ export default async function SharedPredictionPage({
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-2xl px-4 py-12">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold">Atlas Oracle</h1>
+          <h1 className="text-2xl font-bold">A1 Quantum Oracle AI</h1>
           <p className="text-sm text-muted-foreground">Shared Prediction</p>
         </div>
 
@@ -146,7 +146,7 @@ export default async function SharedPredictionPage({
           <p className="text-xs text-muted-foreground">
             Powered by{" "}
             <Link href="/" className="text-primary hover:underline">
-              Atlas Oracle
+              A1 Quantum Oracle AI
             </Link>
           </p>
         </div>

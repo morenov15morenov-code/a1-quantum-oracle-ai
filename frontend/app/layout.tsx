@@ -6,8 +6,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Atlas Oracle — AI Predictions & Forecasting",
-    template: "%s | Atlas Oracle",
+    default: "A1 Quantum Oracle AI — AI Predictions & Forecasting",
+    template: "%s | A1 Quantum Oracle AI",
   },
   description: "AI-powered prediction and forecasting tool. Make informed decisions with data-driven insights.",
 };

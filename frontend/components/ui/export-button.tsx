@@ -21,7 +21,7 @@ export function ExportButton({ limit }: ExportButtonProps) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `atlas-oracle-predictions.${format}`;
+      a.download = `a1-quantum-oracle-ai-predictions.${format}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

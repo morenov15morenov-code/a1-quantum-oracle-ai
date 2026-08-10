@@ -9,7 +9,7 @@ const analysis = {
   input: "Should I pivot my startup?",
   userContext: "bootstrapped for 2 years",
   domain: "Business & Strategy",
-  systemPrompt: "You are Atlas Oracle...",
+  systemPrompt: "You are A1 Quantum Oracle AI...",
   similarCasesUsed: 2,
 };
 

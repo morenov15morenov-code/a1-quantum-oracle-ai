@@ -75,7 +75,7 @@ export default function PrivacyPage() {
         <h2 className="text-xl font-semibold">7. Contact</h2>
         <p>
           For privacy-related inquiries or to exercise your data rights,
-          contact us at privacy@atlas-oracle.com.
+          contact us at privacy@a1quantumoracleai.com.
         </p>
       </section>
     </div>

@@ -1,4 +1,4 @@
-# Atlas Oracle — Universal Foresight Engine
+# A1 Quantum Oracle AI — Universal Foresight Engine
 
 > A universal foresight engine for anyone facing any decision. Not a market tool. Not a niche app. An oracle for every human question.
 
@@ -9,7 +9,7 @@ Last updated: 2026-08-05
 ```bash
 cd frontend
 npm run db:push              # push schema to create/update SQLite DB
-npm run db:seed              # seed admin user (admin@atlas-oracle.com / admin123)
+npm run db:seed              # seed admin user (admin@a1quantumoracleai.com / admin123)
 npm run dev                  # start dev server on http://localhost:3000
 ```
 
@@ -145,7 +145,7 @@ a8caeee fix: migrate middleware to proxy (Next.js 16)
 - **Tests**: +23 (analytics-engine, forecast-engine, response-generator, oracle-pipeline, protocol7 response validation) → 361 tests / 47 files; typecheck, lint, build all green.
 
 ### Phase 15: Secret Admin Trigger
-- **`components/hidden-admin-trigger.tsx`** (client component): an invisible overlay on the landing-page "Atlas Oracle" heading (`aria-hidden`, `data-testid="secret-trigger"`, zero visual footprint). Clicking it 5 times within a 3s-per-click idle window fires `alert("Admin Access Unlocked")`; if the session role is `ADMIN` it then navigates to `/admin/dashboard`. Counter is kept in a ref (no re-renders) and self-resets after firing or after 3s idle. Purely a convenience shortcut — server/proxy `ADMIN` checks remain the real gate.
+- **`components/hidden-admin-trigger.tsx`** (client component): an invisible overlay on the landing-page "A1 Quantum Oracle AI" heading (`aria-hidden`, `data-testid="secret-trigger"`, zero visual footprint). Clicking it 5 times within a 3s-per-click idle window fires `alert("Admin Access Unlocked")`; if the session role is `ADMIN` it then navigates to `/admin/dashboard`. Counter is kept in a ref (no re-renders) and self-resets after firing or after 3s idle. Purely a convenience shortcut — server/proxy `ADMIN` checks remain the real gate.
 - **Wired into `app/page.tsx`**: the `h1` is wrapped in a `relative inline-block` span with `<HiddenAdminTrigger className="absolute inset-0" />`.
 - **Tests**: +7 (`__tests__/components/hidden-admin-trigger.test.tsx` — admin navigate, non-admin/user unauthenticated alert-only, <5 clicks no-op, idle-reset) → 368 tests / 48 files; typecheck, lint clean.
 

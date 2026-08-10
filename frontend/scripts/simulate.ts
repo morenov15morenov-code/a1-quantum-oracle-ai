@@ -1,5 +1,5 @@
 /**
- * Atlas Oracle — Universal Prediction & Profit Simulation
+ * A1 Quantum Oracle AI — Universal Prediction & Profit Simulation
  *
  * Simulates the Oracle serving ALL types of users with ANY question:
  * career, relationships, health, education, finance, creative, travel,
@@ -421,7 +421,7 @@ function runSimulation(): {
 // ── Output ──────────────────────────────────────────────────────────
 
 console.log("═".repeat(72));
-console.log("  ATLAS ORACLE — Universal Prediction Simulation");
+console.log("  A1 QUANTUM ORACLE AI — Universal Prediction Simulation");
 console.log("  Serving ALL users. ANY question. ANY domain.");
 console.log("═".repeat(72));
 console.log();

@@ -1,8 +1,8 @@
 {
-  "name": "atlas-oracle",
+  "name": "a1-quantum-oracle-ai",
   "version": "0.1.0",
   "private": true,
-  "author": "Atlas Oracle Team",
+  "author": "A1 Quantum Oracle AI Team",
   "description": "A universal foresight engine for anyone facing any decision",
   "main": "electron/main.js",
   "scripts": {

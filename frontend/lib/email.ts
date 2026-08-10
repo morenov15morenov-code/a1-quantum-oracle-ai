@@ -16,7 +16,7 @@ export async function sendEmail({ to, subject, html }: SendEmailOptions): Promis
 
   try {
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || "Atlas Oracle <noreply@atlas-oracle.com>",
+      from: process.env.RESEND_FROM_EMAIL || "A1 Quantum Oracle AI <noreply@a1quantumoracleai.com>",
       to,
       subject,
       html,
@@ -31,7 +31,7 @@ export async function sendEmail({ to, subject, html }: SendEmailOptions): Promis
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<boolean> {
   return sendEmail({
     to,
-    subject: "Reset your Atlas Oracle password",
+    subject: "Reset your A1 Quantum Oracle AI password",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #1a1a1a;">Password Reset Request</h2>
@@ -48,7 +48,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
         </p>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;" />
         <p style="color: #9a9a9a; font-size: 12px;">
-          Atlas Oracle — AI-Powered Predictions & Forecasting
+          A1 Quantum Oracle AI — AI-Powered Predictions & Forecasting
         </p>
       </div>
     `,
@@ -58,12 +58,12 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
 export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<boolean> {
   return sendEmail({
     to,
-    subject: "Verify your Atlas Oracle email",
+    subject: "Verify your A1 Quantum Oracle AI email",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #1a1a1a;">Verify your email address</h2>
         <p style="color: #4a4a4a; line-height: 1.6;">
-          Thanks for signing up for Atlas Oracle. Please confirm your email address by clicking the button below.
+          Thanks for signing up for A1 Quantum Oracle AI. Please confirm your email address by clicking the button below.
         </p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${verifyUrl}" style="background-color: #1a1a1a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
@@ -75,7 +75,7 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
         </p>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;" />
         <p style="color: #9a9a9a; font-size: 12px;">
-          Atlas Oracle — AI-Powered Predictions & Forecasting
+          A1 Quantum Oracle AI — AI-Powered Predictions & Forecasting
         </p>
       </div>
     `,
@@ -85,10 +85,10 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
 export async function sendWelcomeEmail(to: string, name: string): Promise<boolean> {
   return sendEmail({
     to,
-    subject: "Welcome to Atlas Oracle",
+    subject: "Welcome to A1 Quantum Oracle AI",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #1a1a1a;">Welcome to Atlas Oracle, ${name}!</h2>
+        <h2 style="color: #1a1a1a;">Welcome to A1 Quantum Oracle AI, ${name}!</h2>
         <p style="color: #4a4a4a; line-height: 1.6;">
           You're now part of a community using AI-powered predictions and forecasting to make better decisions.
         </p>
@@ -99,7 +99,7 @@ export async function sendWelcomeEmail(to: string, name: string): Promise<boolea
         </div>
         <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;" />
         <p style="color: #9a9a9a; font-size: 12px;">
-          Atlas Oracle — AI-Powered Predictions & Forecasting
+          A1 Quantum Oracle AI — AI-Powered Predictions & Forecasting
         </p>
       </div>
     `,

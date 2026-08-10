@@ -23,12 +23,12 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" role="banner">
       <div className="flex h-14 items-center px-4 md:px-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold" aria-label="Atlas Oracle home">
+        <Link href="/" className="flex items-center gap-2 font-semibold" aria-label="A1 Quantum Oracle AI home">
           <span className="relative flex h-7 w-7 items-center justify-center">
             <span className="absolute inset-0 rounded-full bg-gradient-to-br from-cosmic-violet to-cosmic-cyan opacity-80" />
             <span className="relative h-2.5 w-2.5 rounded-full bg-white/90 shadow-[0_0_8px_2px_rgba(34,211,238,0.7)]" />
           </span>
-          <span className="text-lg text-gradient-gold">Atlas Oracle</span>
+          <span className="text-lg text-gradient-gold">A1 Quantum Oracle AI</span>
         </Link>
 
         <nav className="ml-6 hidden items-center gap-4 text-sm md:flex" aria-label="Main navigation">

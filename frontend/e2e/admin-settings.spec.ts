@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Admin flow", () => {
   test("admin dashboard is accessible with admin credentials", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
@@ -15,7 +15,7 @@ test.describe("Admin flow", () => {
 
   test("admin users page is accessible", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
@@ -28,7 +28,7 @@ test.describe("Admin flow", () => {
 
   test("admin analytics page is accessible", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/(dashboard|admin\/dashboard)/);
@@ -67,7 +67,7 @@ test.describe("Password reset flow", () => {
 
   test("request reset form submits successfully", async ({ page }) => {
     await page.goto("/request-reset");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByRole("button", { name: /send|reset/i }).click();
     await expect(page.getByText(/if an account exists|sent|check your email/i)).toBeVisible();
   });
@@ -87,12 +87,12 @@ test.describe("Password reset flow", () => {
   test("request reset rate limits after too many attempts", async ({ page }) => {
     for (let i = 0; i < 4; i++) {
       await page.request.post("/api/auth/request-reset", {
-        data: { email: "admin@atlas-oracle.com" },
+        data: { email: "admin@a1quantumoracleai.com" },
       });
     }
 
     const response = await page.request.post("/api/auth/request-reset", {
-      data: { email: "admin@atlas-oracle.com" },
+      data: { email: "admin@a1quantumoracleai.com" },
     });
 
     expect(response.status()).toBe(429);
@@ -107,7 +107,7 @@ test.describe("Settings page", () => {
 
   test("settings page shows profile form when logged in", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("admin@atlas-oracle.com");
+    await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByLabel("Password", { exact: true }).fill("admin123");
     await page.getByRole("button", { name: /sign in/i }).click();
     await page.waitForURL(/\/(dashboard|admin\/dashboard)/);

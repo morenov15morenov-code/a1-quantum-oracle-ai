@@ -63,7 +63,7 @@ export default function Home() {
 
           <span className="relative inline-block animate-fade-up [animation-delay:250ms]">
             <h1 className="text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl">
-              <span className="text-gradient">Atlas Oracle</span>
+              <span className="text-gradient">A1 Quantum Oracle AI</span>
             </h1>
             <HiddenAdminTrigger className="absolute inset-0" />
           </span>
@@ -100,7 +100,7 @@ export default function Home() {
         </div>
       </div>
 
-      <section className="relative z-10 mx-auto max-w-5xl px-4 pb-20" aria-label="Why Atlas Oracle">
+      <section className="relative z-10 mx-auto max-w-5xl px-4 pb-20" aria-label="Why A1 Quantum Oracle AI">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature, i) => (
             <Reveal key={feature.title} delay={i * 90}>

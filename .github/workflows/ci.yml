@@ -116,7 +116,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: atlas-oracle-linux
+          name: a1-quantum-oracle-ai-linux
           path: release/*.AppImage
           retention-days: 7
 
@@ -129,23 +129,23 @@ jobs:
       - name: Build Docker image
         id: docker-build
         run: |
-          docker build -f frontend/Dockerfile -t atlas-oracle:latest \
+          docker build -f frontend/Dockerfile -t a1-quantum-oracle-ai:latest \
             --build-arg DATABASE_URL="file:./data/dev.db" \
             --build-arg AUTH_SECRET="ci-test-secret" \
             --build-arg NEXT_PUBLIC_APP_URL="http://localhost:3000" \
             frontend/
       - name: Test Docker health check
         run: |
-          docker run -d --name atlas-test -p 3000:3000 \
+          docker run -d --name a1-quantum-oracle-ai-test -p 3000:3000 \
             -e DATABASE_URL="file:/app/data/dev.db" \
             -e AUTH_SECRET="ci-test-secret" \
             -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
-            atlas-oracle:latest
+            a1-quantum-oracle-ai:latest
           echo "=== Container structure ==="
-          docker exec atlas-test ls -la /app/
-          docker exec atlas-test ls -la /app/.next/ 2>/dev/null || true
+          docker exec a1-quantum-oracle-ai-test ls -la /app/
+          docker exec a1-quantum-oracle-ai-test ls -la /app/.next/ 2>/dev/null || true
           echo "=== Server process ==="
-          docker exec atlas-test ps aux 2>/dev/null || true
+          docker exec a1-quantum-oracle-ai-test ps aux 2>/dev/null || true
           echo "=== Trying to start health check (60s timeout) ==="
           for i in $(seq 1 12); do \
             curl -sf http://localhost:3000/api/health && echo "OK" && break; \
@@ -155,5 +155,5 @@ jobs:
           echo "=== Final curl ==="
           curl -f http://localhost:3000/api/health && echo "HEALTHY" || echo "UNHEALTHY"
           echo "=== Container logs ==="
-          docker logs atlas-test 2>&1 || true
-          docker stop atlas-test; docker rm atlas-test
+          docker logs a1-quantum-oracle-ai-test 2>&1 || true
+          docker stop a1-quantum-oracle-ai-test; docker rm a1-quantum-oracle-ai-test

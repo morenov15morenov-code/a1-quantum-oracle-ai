@@ -135,7 +135,7 @@ describe("Predictions API - POST", () => {
   });
 
   it("allows ADMIN users to bypass the free limit", async () => {
-    mockAuth.mockResolvedValue({ user: { id: "user-1", role: "ADMIN", email: "admin@atlas-oracle.com" } });
+    mockAuth.mockResolvedValue({ user: { id: "user-1", role: "ADMIN", email: "admin@a1quantumoracleai.com" } });
     mockOracle.mockResolvedValue({ result: "Forecast result", confidence: 0.7, reasoning: "Reasoning" });
     dbMock.select.mockReturnValue(selectChain({ ...subData, tier: "FREE", predsUsed: 1, predsLimit: 1, periodEnd: null }));
     dbMock.update.mockReturnValueOnce(updateChain(undefined));
@@ -148,8 +148,8 @@ describe("Predictions API - POST", () => {
   });
 
   it("allows emails listed in ADMIN_EMAILS to bypass the free limit", async () => {
-    vi.stubEnv("ADMIN_EMAILS", "admin@atlas-oracle.com, second@example.com");
-    mockAuth.mockResolvedValue({ user: { id: "user-1", role: "USER", email: "admin@atlas-oracle.com" } });
+    vi.stubEnv("ADMIN_EMAILS", "admin@a1quantumoracleai.com, second@example.com");
+    mockAuth.mockResolvedValue({ user: { id: "user-1", role: "USER", email: "admin@a1quantumoracleai.com" } });
     mockOracle.mockResolvedValue({ result: "Forecast result", confidence: 0.7, reasoning: "Reasoning" });
     dbMock.select.mockReturnValue(selectChain({ ...subData, tier: "FREE", predsUsed: 1, predsLimit: 1, periodEnd: null }));
     dbMock.update.mockReturnValueOnce(updateChain(undefined));

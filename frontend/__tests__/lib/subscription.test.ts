@@ -40,8 +40,8 @@ describe("isAdminUser", () => {
   });
 
   it("matches emails listed in ADMIN_EMAILS case-insensitively", () => {
-    vi.stubEnv("ADMIN_EMAILS", "admin@atlas-oracle.com, Boss@Example.com");
-    expect(isAdminUser({ user: { role: "USER", email: "ADMIN@ATLAS-ORACLE.COM" } })).toBe(true);
+    vi.stubEnv("ADMIN_EMAILS", "admin@a1quantumoracleai.com, Boss@Example.com");
+    expect(isAdminUser({ user: { role: "USER", email: "ADMIN@A1QUANTUMORACLEAI.COM" } })).toBe(true);
     expect(isAdminUser({ user: { role: "USER", email: "boss@example.com" } })).toBe(true);
     expect(isAdminUser({ user: { role: "USER", email: "other@example.com" } })).toBe(false);
     vi.unstubAllEnvs();
