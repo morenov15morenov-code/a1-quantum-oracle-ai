@@ -15,7 +15,7 @@ npm run dev                  # start dev server on http://localhost:3000
 
 Requires `DATABASE_URL="file:./data/dev.db"` in `.env.local` for database commands.
 
-## Current Status: PRE-DEPLOYMENT HARDENING COMPLETE
+## Current Status: LIVE ON VERCEL (2026-08-11)
 
 | Check | Result |
 |---|---|
@@ -24,8 +24,15 @@ Requires `DATABASE_URL="file:./data/dev.db"` in `.env.local` for database comman
 | Vitest (`npx vitest run`) | 385 passed, 0 failed, 49 files |
 | Next.js build (`npm run build`) | Compiled successfully, 40 pages, 21 API routes |
 | Playwright E2E (`npx playwright test --workers=1`, against prod build) | 56 passed, 2 skipped (Google/GitHub OAuth unconfigured), 0 failed |
-| Prisma → Drizzle Migration | Complete — all routes, tests, and configs updated |
-| Git hygiene | `frontend/data/dev.db` untracked from git (contained user data + bcrypt hashes) |
+| CI (GitHub Actions run #81/#82) | All jobs green: check, build, e2e, electron-build, docker |
+| Production URL | https://a1-quantum-oracle-ai.vercel.app (deployment `a1-quantum-oracle-ygau3l7aj`) |
+| Production DB | Turso Cloud (`a1-quantum-oracle-ai`), 8 tables pushed, admin seeded |
+| Production env vars | Set on Vercel via API: `AUTH_SECRET` (generated), `NEXT_PUBLIC_APP_URL`/`APP_URL`/`AUTH_URL`/`NEXTAUTH_URL` → `https://a1-quantum-oracle-ai.vercel.app`, `ADMIN_EMAILS`, `PAYMENT_GATE_ENABLED=true`, `DATABASE_URL` (libsql + authToken). `OPENAI_API_KEY` left empty (mock mode). |
+| Live verification | `/api/health` → `{"status":"ok","db":"ok"}`, `/api/auth/*` all 200, real admin login → session `{name: Admin, role: ADMIN}` |
+| GoDaddy domain | `a1quantumoracleai.com` registered (GoDaddy NS) and attached/verified on Vercel; DNS still points at GoDaddy placeholder A records → **user must change nameservers (or A record) to Vercel** |
+| Old alias | `atlas-oracle-seven.vercel.app` still attached as a project domain (pre-rebrand); remove after cutover |
+
+> **Deploy notes**: deploy from repo **root** (`vercel --prod --yes` from `C:\Users\EL GALACTICO15\a1-quantum-oracle-ai`), because the Vercel project has `rootDirectory: frontend` (deploying from `frontend/` double-applies the path). `vercel.json` has no rootDirectory; the setting lives on the Vercel dashboard. Turso schema was pushed with `drizzle-kit push --force` and admin seeded with `npx tsx scripts/seed.ts` (refuses to run when `NODE_ENV=production`, so run via `npx tsx`). Production login e2e was verified with a fetch script (csrf → POST credentials → session).
 
 > **Note**: `frontend/data/dev.db` removal from tracking and the `.env.local` gitignore were committed in `5b455ed`; `frontend/data/.gitkeep` (commit `e1fa181`) keeps the DB dir present in fresh clones/CI so the build-time `@libsql` open (`/api/admin/analytics` page-data collection) succeeds.
 
