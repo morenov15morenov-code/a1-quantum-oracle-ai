@@ -21,9 +21,9 @@ Requires `DATABASE_URL="file:./data/dev.db"` in `.env.local` for database comman
 |---|---|
 | TypeScript (`npx tsc --noEmit`) | 0 errors |
 | ESLint (`npm run lint`) | 0 errors, 0 warnings |
-| Vitest (`npx vitest run`) | 368 passed, 0 failed, 48 files |
+| Vitest (`npx vitest run`) | 385 passed, 0 failed, 49 files |
 | Next.js build (`npm run build`) | Compiled successfully, 40 pages, 21 API routes |
-| Playwright E2E (`npx playwright test --workers=1`) | 56 passed, 2 skipped (Google/GitHub OAuth unconfigured), 0 failed |
+| Playwright E2E (`npx playwright test --workers=1`, against prod build) | 56 passed, 2 skipped (Google/GitHub OAuth unconfigured), 0 failed |
 | Prisma → Drizzle Migration | Complete — all routes, tests, and configs updated |
 | Git hygiene | `frontend/data/dev.db` untracked from git (contained user data + bcrypt hashes) |
 
@@ -217,6 +217,11 @@ npm start
 1. ✅ **Feature gates decided** — `ADMIN_APPROVAL_REQUIRED` off, `EMAIL_VERIFICATION_REQUIRED` off, `PAYMENT_GATE_ENABLED` **on** (production default in `frontend/.env.example`). ⚠️ The payment gate is a guard only — with a valid `STRIPE_SECRET_KEY` it silently bypasses to free activation; without one, PRO upgrades return 402. A real Stripe checkout integration is **not yet implemented** — do not ship with `PAYMENT_GATE_ENABLED=true` and no `STRIPE_SECRET_KEY` unless intentional.
 2. ✅ **CI docker diagnostics trimmed** — removed the `docker pull node:22-alpine` step, `--progress=plain`, and "Surface build errors" annotation from `.github/workflows/ci.yml`.
 3. ✅ **Local re-verification (2026-08-05)** — typecheck 0 errors, lint 0 warnings, vitest 323/323 passed, `next build` compiled (40 pages / 21 API routes), Playwright E2E 56 passed / 2 skipped.
+4. ✅ **E2E stability fix (2026-08-11)** — root cause: the strict CSP (`script-src 'self' 'unsafe-inline'`, no `'unsafe-eval'`) blocked Next.js dev runtimes (Turbopack AND webpack dev both rely on eval), so pages never hydrated in dev → forms did native GET submits (broken login/signup) and Turbopack entered an infinite reload loop on `/`. Fixes committed in `d5612e8`:
+   - `next.config.ts` — allow `'unsafe-eval'` in `script-src` **only in development**; production CSP unchanged (prod bundles don't use eval).
+   - `playwright.config.ts` — webServer now runs a production build (`npm run build && npm run start`, timeout 600s) instead of the dev server (eliminates dev recompile races); `retries: 2` locally to mirror CI.
+   - `proxy.ts` — short-circuit the `auth()` session lookup for public/auth routes (it was never used there), removing DB round-trips from the hot path and intermittent 500s under load; middleware auth POST rate limit is now env-configurable (`AUTH_RATE_LIMIT_MAX`, default 60).
+   - Verified: typecheck 0 errors, lint clean, vitest 385/385, full E2E suite 56 passed / 2 skipped / 0 failed.
 
 ### Production Environment Setup
 1. Set up Turso database for production
@@ -234,6 +239,8 @@ npm start
 ## Full Commit Log
 
 ```
+d5612e8 fix: stabilize e2e suite and dev-mode hydration
+adc02c9 chore: rebrand Atlas Oracle to A1 Quantum Oracle AI (a1quantumoracleai.com)
 4a53178 fix(docker): use busybox-compatible addgroup/adduser flags (no --group/--ingroup)
 71b1c3d ci(docker): isolate base-image pull, merge diagnostics into one annotation
 028b86f ci(docker): use --progress=plain and add docker diagnostics to surface real build errors
