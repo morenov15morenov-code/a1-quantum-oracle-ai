@@ -48,17 +48,6 @@ const API_RATE_LIMITS: Record<string, number> = {
 };
 
 export async function proxy(request: NextRequest) {
-  let session;
-  try {
-    session = await auth();
-  } catch {
-    const { pathname } = request.nextUrl;
-    if (pathname.startsWith("/api")) {
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    }
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
   const { pathname } = request.nextUrl;
 
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/signup");
@@ -82,7 +71,8 @@ export async function proxy(request: NextRequest) {
     if (request.method === "POST") {
       const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? "unknown";
       const key = `auth:${ip}`;
-      if (!checkRateLimit(key, 20)) {
+      const authPostLimit = Number(process.env.AUTH_RATE_LIMIT_MAX) || 60;
+      if (!checkRateLimit(key, authPostLimit)) {
         return NextResponse.json(
           { error: "Too many requests" },
           { status: 429, headers: { "Retry-After": "60" } }
@@ -90,6 +80,16 @@ export async function proxy(request: NextRequest) {
       }
     }
     return NextResponse.next();
+  }
+
+  let session;
+  try {
+    session = await auth();
+  } catch {
+    if (isApiRoute) {
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   if (isAdminApiRoute) {
