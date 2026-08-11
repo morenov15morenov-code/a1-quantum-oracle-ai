@@ -96,6 +96,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
