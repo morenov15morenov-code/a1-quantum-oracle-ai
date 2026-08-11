@@ -2,7 +2,7 @@
 
 > A universal foresight engine for anyone facing any decision. Not a market tool. Not a niche app. An oracle for every human question.
 
-Last updated: 2026-08-05
+Last updated: 2026-08-11
 
 ## Quick Start
 
@@ -35,6 +35,12 @@ Requires `DATABASE_URL="file:./data/dev.db"` in `.env.local` for database comman
 |---|---|---|---|---|---|---|
 | #65 | 71b1c3d | ✅ | ✅ | ✅ | ✅ | ❌ (busybox has no `--group`/`--ingroup`) |
 | #66 | 4a53178 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| #78 | adc02c9 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| #79 | d5612e8 | ✅ | ✅ | ❌ (36 failures) | ✅ | ✅ |
+| #80 | 22ae507 | ✅ | ✅ | ❌ (same) | ✅ | ✅ |
+| #81 | f96395d | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**Final validation**: run #81 (f96395d) fully green after the CI e2e fix. Root cause of #79/#80: the e2e job runs the prod server (`next start`) without the `AUTH_URL`/`NEXTAUTH_URL` that local `.env.local` provides, so NextAuth threw `UntrustedHost` in the middleware (`auth()` → 500 → redirect loop on `/login`, `/signup`, and `POST /api/auth/callback/credentials` returned 500). Fix: `trustHost: true` in `frontend/lib/auth.ts` (Auth.js's documented approach for `next start`/self-hosted deployments; Vercel still auto-trusts). Verified locally before push: full e2e suite (56 passed / 2 skipped OAuth / 0 failed) passes against a prod server started with `AUTH_URL`/`NEXTAUTH_URL` scrubbed.
 
 **Final validation**: run #66 (4a53178) fully green — workflow badge reads `CI · passing` for `ci.yml@main`. Docker fix: reverted to `addgroup --system --gid 1001 nodejs` + `adduser --system --uid 1001 nextjs` + `chown -R nextjs:nodejs /app` (busybox-compatible). Pre-#65 failures (e2e `uptime` vs `version`, electron/docker path issues) were all resolved in the earlier run series.
 
@@ -239,6 +245,8 @@ npm start
 ## Full Commit Log
 
 ```
+f96395d fix(auth): trust host in production to resolve CI UntrustedHost
+22ae507 docs: update SESSION-STATE with e2e stability fix and rebrand commits
 d5612e8 fix: stabilize e2e suite and dev-mode hydration
 adc02c9 chore: rebrand Atlas Oracle to A1 Quantum Oracle AI (a1quantumoracleai.com)
 4a53178 fix(docker): use busybox-compatible addgroup/adduser flags (no --group/--ingroup)
