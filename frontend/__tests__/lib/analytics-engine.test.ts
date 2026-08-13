@@ -8,12 +8,16 @@ vi.mock("@/lib/similarity", () => ({ findSimilarPredictions: vi.fn() }));
 const mockSimilarity = vi.mocked(await import("@/lib/similarity")).findSimilarPredictions;
 
 function mockPastChain(rows: unknown[]) {
+  const where = vi.fn();
   const terminal = { all: vi.fn().mockResolvedValue(rows) };
   return {
+    whereMock: where,
     from: vi.fn().mockReturnValue({
       leftJoin: vi.fn().mockReturnValue({
-        orderBy: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue(terminal),
+        where: where.mockReturnValue({
+          orderBy: vi.fn().mockReturnValue({
+            limit: vi.fn().mockReturnValue(terminal),
+          }),
         }),
       }),
     }),
@@ -28,7 +32,7 @@ describe("AnalyticsEngine", () => {
 
   it("builds an analysis with domain and user context", async () => {
     dbMock.select.mockReturnValueOnce(mockPastChain([]));
-    const result = await AnalyticsEngine.run("Should I switch careers?", "5 years as an engineer", "Career & Work");
+    const result = await AnalyticsEngine.run("Should I switch careers?", "5 years as an engineer", "Career & Work", "user-1");
 
     expect(result.domain).toBe("Career & Work");
     expect(result.userContext).toBe("5 years as an engineer");
@@ -40,8 +44,15 @@ describe("AnalyticsEngine", () => {
 
   it("defaults the domain to General when none provided", async () => {
     dbMock.select.mockReturnValueOnce(mockPastChain([]));
-    const result = await AnalyticsEngine.run("What does the future hold?", "", undefined);
+    const result = await AnalyticsEngine.run("What does the future hold?", "", undefined, "user-1");
     expect(result.domain).toBe("General");
+  });
+
+  it("scopes past predictions to the requesting user", async () => {
+    const chain = mockPastChain([]);
+    dbMock.select.mockReturnValueOnce(chain);
+    await AnalyticsEngine.run("Should I switch careers?", "", "Career & Work", "user-9");
+    expect(chain.whereMock).toHaveBeenCalledTimes(1);
   });
 
   it("includes past similar cases in the analysis", async () => {
@@ -65,7 +76,7 @@ describe("AnalyticsEngine", () => {
       },
     ]);
 
-    const result = await AnalyticsEngine.run("Should I change jobs?", "laid off", "Career & Work");
+    const result = await AnalyticsEngine.run("Should I change jobs?", "laid off", "Career & Work", "user-1");
 
     expect(result.similarCasesUsed).toBe(1);
     expect(result.systemPrompt).toContain("PAST SIMILAR CASES TO LEARN FROM:");

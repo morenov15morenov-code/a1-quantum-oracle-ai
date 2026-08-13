@@ -63,6 +63,7 @@ CRITICAL RULES:
 - Never give the same answer twice. Each response must be unique to the person asking.
 - Use the user's specific context and background to personalize the prediction.
 - If there are past similar cases with outcomes, learn from them and incorporate those lessons.
+- If past similar cases include verified outcomes, calibrate your confidence score toward their observed accuracy rate and state that calibration explicitly in your reasoning.
 - Every prediction MUST explicitly reference at least 4 of the 7 analysis dimensions above.
 
 `;
@@ -90,6 +91,11 @@ CRITICAL RULES:
         prompt += `  User Verified: ${c.wasAccurate ? "Accurate" : "Not Accurate"}\n`;
       }
     });
+    const verifiedCases = oracleContext.similarPastCases.filter((c) => c.wasAccurate !== null);
+    if (verifiedCases.length > 0) {
+      const accurate = verifiedCases.filter((c) => c.wasAccurate).length;
+      prompt += `\nAggregate: ${accurate} of ${verifiedCases.length} verified similar cases were accurate.\n`;
+    }
     prompt += `\nLearn from these past cases. If the current question is similar but the person has different context, adjust accordingly. Do NOT copy previous answers.\n\n`;
   }
 
@@ -103,12 +109,12 @@ The "reasoning" must detail which dimensions were considered and how each influe
 }
 
 export const AnalyticsEngine = {
-  async run(input: string, context?: string, domainCategory?: string): Promise<AnalyticsResult> {
+  async run(input: string, context?: string, domainCategory?: string, userId?: string): Promise<AnalyticsResult> {
     const domain = domainCategory || "General";
     const userContext = context || "";
     const userInput = input;
 
-    const pastPredictions = await db
+    const baseQuery = db
       .select({
         id: predictions.id,
         input: predictions.input,
@@ -123,7 +129,11 @@ export const AnalyticsEngine = {
         feedbackRating: predictionFeedbacks.rating,
       })
       .from(predictions)
-      .leftJoin(predictionFeedbacks, eq(predictions.id, predictionFeedbacks.predictionId))
+      .leftJoin(predictionFeedbacks, eq(predictions.id, predictionFeedbacks.predictionId));
+
+    const pastQuery = userId ? baseQuery.where(eq(predictions.userId, userId)) : baseQuery;
+
+    const pastPredictions = await pastQuery
       .orderBy(sql`${predictions.createdAt} DESC`)
       .limit(100)
       .all();

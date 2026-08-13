@@ -16,15 +16,18 @@ export async function POST(request: Request) {
   }
 
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const rl = await rateLimit(`predict:${session.user.id}:${ip}`, 10, 60000);
-  if (!rl.success) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
+  const isAdmin = isAdminUser(session);
+
+  let rl: { success: boolean; remaining: number } = { success: true, remaining: 10 };
+  if (!isAdmin) {
+    rl = await rateLimit(`predict:${session.user.id}:${ip}`, 10, 60000);
+    if (!rl.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
+    }
   }
 
   try {
     const subscription = await refreshSubscription(session.user.id);
-
-    const isAdmin = isAdminUser(session);
 
     if (process.env.EMAIL_VERIFICATION_REQUIRED === "true" && !session.user.emailVerified) {
       return NextResponse.json(
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     const { input, context, domainCategory } = parsed.data;
-    const oracleResult = await queryOracle({ input, context, domainCategory });
+    const oracleResult = await queryOracle({ input, context, domainCategory, userId: session.user.id });
 
     const prediction = await db.insert(predictions).values({
       userId: session.user.id,

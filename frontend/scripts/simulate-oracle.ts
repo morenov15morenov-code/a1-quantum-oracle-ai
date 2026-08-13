@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { queryOracle } from "../lib/oracle";
 import { db } from "../lib/db";
 import { predictions, users } from "../lib/schema";
@@ -92,6 +93,7 @@ async function main() {
       input: tc.input,
       context: tc.context,
       domainCategory: tc.domainCategory,
+      userId: sysUserId,
     });
 
     console.log(`  🤖  ${result.result.substring(0, 180)}`);

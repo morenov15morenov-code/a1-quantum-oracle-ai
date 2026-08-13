@@ -9,6 +9,7 @@ export interface OracleInput {
   input: string;
   context?: string;
   domainCategory?: string;
+  userId?: string;
 }
 
 export async function queryOracle(oracleInput: OracleInput): Promise<{
@@ -22,7 +23,8 @@ export async function queryOracle(oracleInput: OracleInput): Promise<{
   const analysis = await AnalyticsEngine.run(
     oracleInput.input,
     oracleInput.context,
-    oracleInput.domainCategory
+    oracleInput.domainCategory,
+    oracleInput.userId
   );
 
   const forecast = await ForecastEngine.run(analysis);

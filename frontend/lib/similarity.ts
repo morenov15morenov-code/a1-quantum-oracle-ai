@@ -34,6 +34,20 @@ function wordOverlapScore(query: string, candidate: string): number {
   return jaccardSimilarity(qTokens, cTokens);
 }
 
+function bigramOverlapScore(query: string, candidate: string): number {
+  const toBigrams = (tokens: string[]): Set<string> => {
+    const out = new Set<string>();
+    for (let i = 0; i < tokens.length - 1; i++) {
+      out.add(`${tokens[i]} ${tokens[i + 1]}`);
+    }
+    return out;
+  };
+  const qTokens = [...tokenize(query)];
+  const cTokens = [...tokenize(candidate)];
+  if (qTokens.length < 2 || cTokens.length < 2) return 0;
+  return jaccardSimilarity(toBigrams(qTokens), toBigrams(cTokens));
+}
+
 const STOP_WORDS = new Set([
   "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
   "have", "has", "had", "do", "does", "did", "will", "would", "could",
@@ -71,8 +85,11 @@ export function findSimilarPredictions(
   const scored = pastPredictions.map((p) => {
     const jScore = wordOverlapScore(query, p.input);
     const kScore = keywordOverlap(query, p.input);
+    const bScore = bigramOverlapScore(query, p.input);
     const domainBonus = domainCategory && p.domainCategory === domainCategory ? 0.15 : 0;
-    const score = jScore * 0.4 + kScore * 0.6 + domainBonus;
+    const feedbackBoost = p.feedbackWasAccurate === true ? 0.08 : p.feedbackWasAccurate === false ? -0.08 : 0;
+    const outcomeBoost = p.outcomeStatus && p.outcomeStatus.toUpperCase() === "PARTIAL" ? 0.02 : 0;
+    const score = jScore * 0.3 + kScore * 0.45 + bScore * 0.25 + domainBonus + feedbackBoost + outcomeBoost;
     return { prediction: p, score };
   });
 

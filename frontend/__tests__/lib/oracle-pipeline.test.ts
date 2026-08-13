@@ -39,7 +39,8 @@ describe("queryOracle (pipeline)", () => {
     expect(mockAnalytics).toHaveBeenCalledWith(
       analysis.input,
       analysis.userContext,
-      analysis.domain
+      analysis.domain,
+      undefined
     );
     expect(result).toEqual({
       result: "Favorable conditions detected.",

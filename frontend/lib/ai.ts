@@ -7,13 +7,12 @@ export interface PredictionResult {
 }
 
 function hashToRange(input: string, max: number): number {
-  let hash = 0;
+  let hash = 2166136261;
   for (let i = 0; i < input.length; i++) {
-    const char = input.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
   }
-  return Math.abs(hash) % max;
+  return (hash >>> 0) % max;
 }
 
 const ANALYSIS_DIMENSIONS = [
@@ -67,12 +66,98 @@ function trimAuxiliary(text: string): string {
   return text.replace(AUXILIARY_VERBS, "");
 }
 
+const MOON_PHASE_CYCLE_DAYS = 29.530588853;
+const KNOWN_NEW_MOON_MS = Date.UTC(2000, 0, 6, 18, 14);
+
+export interface MoonPhase {
+  phase: string;
+  illumination: number;
+}
+
+export function getMoonPhase(date: Date): MoonPhase {
+  const elapsed = (date.getTime() - KNOWN_NEW_MOON_MS) / 86400000;
+  const age = ((elapsed % MOON_PHASE_CYCLE_DAYS) + MOON_PHASE_CYCLE_DAYS) % MOON_PHASE_CYCLE_DAYS;
+  const illumination = Math.round(0.5 * (1 - Math.cos((2 * Math.PI * age) / MOON_PHASE_CYCLE_DAYS)) * 100) / 100;
+  const phase =
+    age < 1.845 ? "New Moon"
+    : age < 5.536 ? "Waxing Crescent"
+    : age < 9.228 ? "First Quarter"
+    : age < 12.919 ? "Waxing Gibbous"
+    : age < 16.610 ? "Full Moon"
+    : age < 20.302 ? "Waning Gibbous"
+    : age < 23.993 ? "Last Quarter"
+    : age < 27.685 ? "Waning Crescent"
+    : "New Moon";
+  return { phase, illumination };
+}
+
+const ZODIAC_SEASONS = [
+  ["Aquarius", 1, 20],
+  ["Pisces", 2, 19],
+  ["Aries", 3, 21],
+  ["Taurus", 4, 20],
+  ["Gemini", 5, 21],
+  ["Cancer", 6, 21],
+  ["Leo", 7, 23],
+  ["Virgo", 8, 23],
+  ["Libra", 9, 23],
+  ["Scorpio", 10, 23],
+  ["Sagittarius", 11, 22],
+  ["Capricorn", 12, 22],
+] as const;
+
+export function getSunSign(date: Date): string {
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const todayKey = month * 100 + day;
+  let sign = "Capricorn";
+  let best = -Infinity;
+  for (const [candidate, startMonth, startDay] of ZODIAC_SEASONS) {
+    const startKey = startMonth * 100 + startDay;
+    if (todayKey >= startKey && startKey > best) {
+      best = startKey;
+      sign = candidate;
+    }
+  }
+  return sign;
+}
+
+const MOON_PHASE_HINTS: Record<string, string> = {
+  "New Moon": "a new moon opens an initiation window — seeds planted now carry through the whole cycle",
+  "Waxing Crescent": "the waxing crescent rewards early, deliberate movement while intentions are still forming",
+  "First Quarter": "a first-quarter moon tests momentum — decisions made under pressure reveal their true weight",
+  "Waxing Gibbous": "the waxing gibbous is a refinement phase — the outline is set, and detail work decides the result",
+  "Full Moon": "a full moon illuminates — hidden factors around this question are surfacing now",
+  "Waning Gibbous": "the waning gibbous is a harvest phase — consolidate what has come to light before moving again",
+  "Last Quarter": "a last-quarter moon calls for reassessment — release what no longer serves the aim",
+  "Waning Crescent": "the waning crescent favors surrender and rest — the next cycle begins quietly",
+};
+
+export interface CelestialWindow {
+  moonPhase: string;
+  moonIllumination: number;
+  moonHint: string;
+  season: string;
+}
+
+export function getCelestialWindow(date: Date = new Date()): CelestialWindow {
+  const { phase, illumination } = getMoonPhase(date);
+  return {
+    moonPhase: phase,
+    moonIllumination: illumination,
+    moonHint: MOON_PHASE_HINTS[phase] ?? MOON_PHASE_HINTS["New Moon"],
+    season: `${getSunSign(date)} season`,
+  };
+}
+
 const YES_NO_VERDICTS = [
-  { verdict: "Yes", confidence: 0.82 },
+  { verdict: "Yes", confidence: 0.85 },
   { verdict: "Probably yes", confidence: 0.72 },
+  { verdict: "Leaning yes", confidence: 0.62 },
   { verdict: "Uncertain — the signs are mixed", confidence: 0.5 },
+  { verdict: "Leaning no", confidence: 0.38 },
   { verdict: "Probably not", confidence: 0.28 },
-  { verdict: "No", confidence: 0.18 },
+  { verdict: "No", confidence: 0.15 },
 ];
 
 const TIMING_WINDOWS = [
@@ -89,6 +174,9 @@ const ADVICE_LEADS = [
   "A measured, patient approach carries the strongest alignment",
   "You will need to remove an obstacle before the outcome can settle",
   "The window is closing — deliberate action is required now",
+  "The strongest position is built through small, consistent moves",
+  "A single decisive conversation will resolve more than any elaborate plan",
+  "Defer the big commitment until the signal you have been waiting for arrives",
 ];
 
 const GUIDANCE_LINES = [
@@ -98,6 +186,9 @@ const GUIDANCE_LINES = [
   "Notice the people who appear twice in your orbit — one of them is pivotal.",
   "The oracle counsels openness over strategy: the signal you are waiting for is closer than it feels.",
   "Prepare quietly and move when the energy turns; the current configuration rewards the prepared.",
+  "What appears as a setback this week is rearranging a path that will shorten your route.",
+  "Keep one thread of the plan hidden until the moment of commitment — it is your leverage.",
+  "The answer you seek is already encoded in a habit you are ready to change.",
 ];
 
 interface ContextFacts {
@@ -196,12 +287,103 @@ const READINGS = [
 function verdictJudgement(verdict: string): string {
   if (verdict === "Yes") return "the conditions are genuinely aligned in its favor";
   if (verdict === "Probably yes") return "the weight of the reading tilts toward it";
+  if (verdict === "Leaning yes") return "the balance of forces tilts in its favor, though not without friction";
   if (verdict === "Probably not") return "the weight of the reading tilts against it";
+  if (verdict === "Leaning no") return "the balance of forces tilts against it, though a narrow path remains";
   if (verdict === "No") return "the conditions do not align in its favor";
   return "the forces around it are pulling in opposite directions at nearly equal strength";
 }
 
-function generateQuestionAware(input: string, userContext: string, seed: string): PredictionResult {
+export interface PastCase {
+  question: string;
+  domain: string | null;
+  prediction: string | null;
+  confidence: number | null;
+  outcome: string | null;
+  verified: boolean | null;
+}
+
+function normalizeQuestion(text: string): string {
+  return text.toLowerCase().replace(/[?.!\s]+$/, "").replace(/\s+/g, " ").trim();
+}
+
+function parsePastCases(systemPrompt: string | undefined): PastCase[] {
+  if (!systemPrompt) return [];
+  const match = systemPrompt.match(/PAST SIMILAR CASES TO LEARN FROM:\n([\s\S]*?)(?:\n\nLearn from these past cases\.|$)/);
+  if (!match) return [];
+
+  const cases: PastCase[] = [];
+  for (const block of match[1].split(/\n\s*Case \d+:/)) {
+    if (!block.trim()) continue;
+    const question = block.match(/Question: "([\s\S]*?)"/)?.[1] ?? block.match(/Question: (.*)/)?.[1];
+    if (!question) continue;
+    const confidence = block.match(/Previous Confidence: (\d+)%/)?.[1];
+    const verified = block.match(/User Verified: (Accurate|Not Accurate)/)?.[1];
+    cases.push({
+      question: question.trim(),
+      domain: block.match(/Domain: (.*)/)?.[1]?.trim() ?? null,
+      prediction: block.match(/Previous Prediction: (.*)/)?.[1]?.trim() ?? null,
+      confidence: confidence ? parseInt(confidence, 10) / 100 : null,
+      outcome: block.match(/Outcome: (.*)/)?.[1]?.trim() || null,
+      verified: verified ? verified === "Accurate" : null,
+    });
+  }
+  return cases;
+}
+
+interface PastCaseCalibration {
+  confidence: number;
+  note: string | null;
+  repeated: number;
+}
+
+function calibrateWithPastCases(pastCases: PastCase[], input: string, baseConfidence: number): PastCaseCalibration {
+  if (pastCases.length === 0) return { confidence: baseConfidence, note: null, repeated: 0 };
+
+  const repeated = pastCases.filter((c) => normalizeQuestion(c.question) === normalizeQuestion(input)).length;
+  const verified = pastCases.filter((c) => c.verified !== null);
+  let confidence = baseConfidence;
+  let note: string | null = null;
+
+  if (verified.length > 0) {
+    const accurate = verified.filter((c) => c.verified).length;
+    const accuracy = accurate / verified.length;
+    confidence = baseConfidence * 0.6 + accuracy * 0.4;
+    if (accuracy >= 0.67) {
+      note = `Similar past readings you verified were accurate ${Math.round(accuracy * 100)}% of the time, reinforcing this direction`;
+    } else if (accuracy <= 0.4) {
+      note = `You marked ${Math.round((1 - accuracy) * 100)}% of similar past readings as inaccurate, so the oracle holds this forecast with extra caution`;
+    } else {
+      note = `Similar past readings you verified split about evenly, giving this signal moderate weight`;
+    }
+  } else if (pastCases.some((c) => c.outcome && c.outcome.toUpperCase() === "PARTIAL")) {
+    note = "Similar past cases were only partially realized, tempering the strength of this forecast";
+  }
+
+  if (repeated > 0) {
+    note = note
+      ? `${note}, and you have asked this before — the oracle reads the shift in your circumstances since then`
+      : "You have asked this before — the oracle reads the shift in your circumstances since then";
+  }
+
+  return { confidence: Math.min(1, Math.max(0.05, confidence)), note, repeated };
+}
+
+function applyPastCases(
+  pastCases: PastCase[],
+  input: string,
+  baseConfidence: number,
+  reasoningBase: string
+): { confidence: number; note: string; reasoning: string } {
+  if (pastCases.length === 0) return { confidence: baseConfidence, note: "", reasoning: reasoningBase };
+  const calibration = calibrateWithPastCases(pastCases, input, baseConfidence);
+  const note = calibration.note ? ` ${calibration.note}.` : "";
+  const n = pastCases.length;
+  const reasoning = `${reasoningBase} The oracle weighed ${n} similar reading${n === 1 ? "" : "s"} from your history${calibration.note ? ` — ${calibration.note.toLowerCase()}` : ""}.`;
+  return { confidence: calibration.confidence, note, reasoning };
+}
+
+function generateQuestionAware(input: string, userContext: string, seed: string, pastCases: PastCase[] = []): PredictionResult {
   const parsed = parseQuestion(input);
   const subject = (parsed.predicate || parsed.subject || input).toLowerCase();
   const subjectRef = subject.substring(0, 90);
@@ -213,53 +395,66 @@ function generateQuestionAware(input: string, userContext: string, seed: string)
   const dimB = ANALYSIS_DIMENSIONS[(h + 3) % ANALYSIS_DIMENSIONS.length];
   const reading = READINGS[h % READINGS.length](subjectRef, opening);
   const guidance = GUIDANCE_LINES[(h + 2) % GUIDANCE_LINES.length];
+  const celestial = getCelestialWindow();
+  const moonNote = `This reading arrives under the ${celestial.moonPhase.toLowerCase()} during ${celestial.season.toLowerCase()} — ${celestial.moonHint}.`;
 
-  const reasoning = `The oracle layered ${dimA.substring(0, 80)}... against ${dimB.substring(0, 80)}..., then focused the field through your specifics${clause ? ` (${clause})` : ""} and the exact wording of your question about "${subjectRef}". The dominant signal was then weighted by the current celestial and energetic configuration.`;
+  const reasoningBase = `The oracle layered ${dimA.substring(0, 80)}... against ${dimB.substring(0, 80)}..., then focused the field through your specifics${clause ? ` (${clause})` : ""} and the exact wording of your question about "${subjectRef}". The dominant signal was weighted by the current celestial and energetic configuration (${celestial.moonPhase}, ${celestial.season}, ${Math.round(celestial.moonIllumination * 100)}% lunar illumination) and the day's signature.`;
 
   switch (parsed.type) {
     case "yesno": {
       const v = YES_NO_VERDICTS[h % YES_NO_VERDICTS.length];
+      const cal = applyPastCases(pastCases, input, v.confidence, reasoningBase);
       return {
-        result: `${v.verdict} — on the matter of "${subjectRef}", ${verdictJudgement(v.verdict)}. ${reading} ${guidance}`,
-        confidence: v.confidence,
-        reasoning,
+        result: `${v.verdict} — on the matter of "${subjectRef}", ${verdictJudgement(v.verdict)}. ${reading} ${guidance}${cal.note} ${moonNote}`,
+        confidence: cal.confidence,
+        reasoning: cal.reasoning,
       };
     }
     case "should": {
       const v = h % 2 === 0 ? "Yes — the reading supports it" : "No — the reading counsels caution";
+      const baseConfidence = 0.6 + (h % 15) * 0.01;
+      const cal = applyPastCases(pastCases, input, baseConfidence, reasoningBase);
       return {
-        result: `${v} on the matter of "${subjectRef}". ${reading} ${ADVICE_LEADS[h % ADVICE_LEADS.length]} before committing fully. ${guidance}`,
-        confidence: 0.6 + (h % 15) * 0.01,
-        reasoning,
+        result: `${v} on the matter of "${subjectRef}". ${reading} ${ADVICE_LEADS[h % ADVICE_LEADS.length]} before committing fully. ${guidance}${cal.note} ${moonNote}`,
+        confidence: cal.confidence,
+        reasoning: cal.reasoning,
       };
     }
     case "when": {
       const window = TIMING_WINDOWS[h % TIMING_WINDOWS.length];
+      const baseConfidence = 0.6 + (h % 15) * 0.01;
+      const cal = applyPastCases(pastCases, input, baseConfidence, reasoningBase);
       return {
-        result: `The oracle places "${subjectRef}" ${window}. ${opening}the energetic window is ${h % 2 === 0 ? "opening and favors forward motion" : "still forming — a preparatory phase comes first, and pushing too early will misalign the outcome"}. ${guidance}`,
-        confidence: 0.6 + (h % 15) * 0.01,
-        reasoning,
+        result: `The oracle places "${subjectRef}" ${window}. ${opening}the energetic window is ${h % 2 === 0 ? "opening and favors forward motion" : "still forming — a preparatory phase comes first, and pushing too early will misalign the outcome"}. ${guidance}${cal.note} ${moonNote}`,
+        confidence: cal.confidence,
+        reasoning: cal.reasoning,
       };
     }
     case "how": {
+      const baseConfidence = 0.62 + (h % 15) * 0.01;
+      const cal = applyPastCases(pastCases, input, baseConfidence, reasoningBase);
       return {
-        result: `On moving through "${subjectRef}", the oracle's counsel is: ${ADVICE_LEADS[(h + 1) % ADVICE_LEADS.length]}. ${reading} ${guidance}`,
-        confidence: 0.62 + (h % 15) * 0.01,
-        reasoning,
+        result: `On moving through "${subjectRef}", the oracle's counsel is: ${ADVICE_LEADS[(h + 1) % ADVICE_LEADS.length]}. ${reading} ${guidance}${cal.note} ${moonNote}`,
+        confidence: cal.confidence,
+        reasoning: cal.reasoning,
       };
     }
     case "what": {
+      const baseConfidence = 0.6 + (h % 15) * 0.01;
+      const cal = applyPastCases(pastCases, input, baseConfidence, reasoningBase);
       return {
-        result: `On the matter of "${subjectRef}", the oracle sees a central theme: ${ADVICE_LEADS[h % ADVICE_LEADS.length].toLowerCase()}. ${reading} ${guidance}`,
-        confidence: 0.6 + (h % 15) * 0.01,
-        reasoning,
+        result: `On the matter of "${subjectRef}", the oracle sees a central theme: ${ADVICE_LEADS[h % ADVICE_LEADS.length].toLowerCase()}. ${reading} ${guidance}${cal.note} ${moonNote}`,
+        confidence: cal.confidence,
+        reasoning: cal.reasoning,
       };
     }
     default: {
+      const baseConfidence = 0.58 + (h % 15) * 0.01;
+      const cal = applyPastCases(pastCases, input, baseConfidence, reasoningBase);
       return {
-        result: `The oracle considers "${subjectRef}" and concludes: ${ADVICE_LEADS[(h + 2) % ADVICE_LEADS.length]}. ${reading} ${h % 2 === 0 ? "The overall trajectory favors a positive resolution." : "Patience is required — the alignment is still forming."}`,
-        confidence: 0.58 + (h % 15) * 0.01,
-        reasoning,
+        result: `The oracle considers "${subjectRef}" and concludes: ${ADVICE_LEADS[(h + 2) % ADVICE_LEADS.length]}. ${reading} ${h % 2 === 0 ? "The overall trajectory favors a positive resolution." : "Patience is required — the alignment is still forming."}${cal.note} ${moonNote}`,
+        confidence: cal.confidence,
+        reasoning: cal.reasoning,
       };
     }
   }
@@ -268,8 +463,13 @@ function generateQuestionAware(input: string, userContext: string, seed: string)
 function generateMockPrediction(input: string, systemPrompt?: string): PredictionResult {
   const ctxMatch = systemPrompt?.match(/USER'S PERSONAL CONTEXT:\n([\s\S]*?)(?:\n\n|\nPAST|$)/);
   const userContext = ctxMatch ? ctxMatch[1].trim() : "";
-  const fullSeed = input + "|" + userContext + "|" + (systemPrompt?.substring(0, 200) || "");
-  return generateQuestionAware(input, userContext, fullSeed);
+  const pastCases = parsePastCases(systemPrompt);
+  const dayEpoch = Math.floor(Date.now() / 86400000);
+  const repeated = pastCases.filter((c) => normalizeQuestion(c.question) === normalizeQuestion(input)).length;
+  const fullSeed =
+    input + "|" + userContext + "|" + (systemPrompt?.substring(0, 200) || "") + "|" + dayEpoch +
+    (repeated > 0 ? "|repeat:" + repeated : "");
+  return generateQuestionAware(input, userContext, fullSeed, pastCases);
 }
 
 export async function generatePrediction(input: string, systemPrompt?: string): Promise<PredictionResult> {
