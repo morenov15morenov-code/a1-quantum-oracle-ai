@@ -52,4 +52,14 @@ describe("SubscriptionBadge", () => {
     render(<SubscriptionBadge />);
     expect(screen.getByText("Almost full")).toBeInTheDocument();
   });
+
+  it("renders unlimited badge for admins", () => {
+    mockUseFetch.mockReturnValue({
+      data: { id: "sub-1", tier: "PRO", predsUsed: 0, predsLimit: 0, periodStart: new Date(), periodEnd: null, unlimited: true },
+      loading: false,
+    });
+    render(<SubscriptionBadge />);
+    expect(screen.getByText("Admin")).toBeInTheDocument();
+    expect(screen.getByText("Unlimited predictions")).toBeInTheDocument();
+  });
 });

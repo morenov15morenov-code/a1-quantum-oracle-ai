@@ -102,6 +102,22 @@ describe("Subscription API - GET", () => {
     expect(mockDb.insert).toHaveBeenCalled();
   });
 
+  it("returns unlimited subscription for admin users", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1", role: "ADMIN" } });
+    mockDb.select.mockReturnValue(mockChain({
+      id: "sub-1", userId: "user-1", tier: "FREE", predsUsed: 1, predsLimit: 1, periodStart: new Date(), periodEnd: null,
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.unlimited).toBe(true);
+    expect(body.tier).toBe("PRO");
+    expect(body.predsLimit).toBe(0);
+    expect(body.predsUsed).toBe(0);
+  });
+
   it("rejects unauthorized", async () => {
     mockAuth.mockResolvedValue(null);
     const response = await GET();

@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { subscriptions, analyticsEvents } from "@/lib/schema";
 import { subscriptionSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
-import { FREE_PRED_LIMIT, PRO_PRED_LIMIT, refreshSubscription } from "@/lib/subscription";
+import { FREE_PRED_LIMIT, PRO_PRED_LIMIT, refreshSubscription, isAdminUser, unlimitedSubscription } from "@/lib/subscription";
 import { eq } from "drizzle-orm";
 
 export async function GET() {
@@ -15,6 +15,10 @@ export async function GET() {
 
   try {
     const subscription = await refreshSubscription(session.user.id);
+
+    if (isAdminUser(session)) {
+      return NextResponse.json(unlimitedSubscription(subscription));
+    }
 
     return NextResponse.json(subscription);
   } catch (error) {

@@ -18,6 +18,16 @@ export function SubscriptionBadge() {
 
   if (!data) return null;
 
+  if (data.unlimited) {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm">
+        <span className="h-2 w-2 rounded-full bg-purple-500" />
+        <span className="font-medium">Admin</span>
+        <span className="text-muted-foreground">Unlimited predictions</span>
+      </div>
+    );
+  }
+
   const usagePercent = data.predsLimit > 0 ? (data.predsUsed / data.predsLimit) * 100 : 0;
   const isPro = data.tier === "PRO";
   const out = !isPro && data.predsUsed >= data.predsLimit;

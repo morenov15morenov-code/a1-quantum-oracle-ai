@@ -21,6 +21,17 @@ export function isAdminUser(session: { user?: { role?: string | null; email?: st
   return adminEmails.includes((session?.user?.email ?? "").toLowerCase());
 }
 
+export function unlimitedSubscription<T extends object>(sub: T) {
+  return {
+    ...sub,
+    tier: "PRO",
+    status: "ACTIVE",
+    predsUsed: 0,
+    predsLimit: 0,
+    unlimited: true,
+  };
+}
+
 export async function refreshSubscription(userId: string) {
   let sub = await db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).get();
   if (!sub) {

@@ -58,6 +58,7 @@ export function SubscriptionSettings() {
 
   const isPro = subscription.tier === "PRO" && subscription.status === "ACTIVE";
   const isPending = subscription.tier === "PRO" && subscription.status === "PENDING";
+  const isUnlimited = subscription.unlimited === true;
   const usagePercent = subscription.predsLimit > 0
     ? (subscription.predsUsed / subscription.predsLimit) * 100
     : 0;
@@ -76,6 +77,12 @@ export function SubscriptionSettings() {
         </div>
       )}
 
+      {isUnlimited && (
+        <div className="rounded-md bg-purple-500/15 p-3 text-sm text-purple-700 dark:text-purple-400" role="status">
+          You have unlimited predictions as an administrator. No usage limits apply to this account.
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card className={isPro ? "border-purple-500" : ""}>
           <CardHeader>
@@ -91,7 +98,9 @@ export function SubscriptionSettings() {
               <li>Prediction history</li>
               <li>Feedback tracking</li>
             </ul>
-            {isPro ? (
+            {isUnlimited ? (
+              <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Unlimited (admin)</p>
+            ) : isPro ? (
               <p className="text-sm font-medium text-green-600 dark:text-green-400">Current plan</p>
             ) : isPending ? (
               <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Pending approval</p>
@@ -122,7 +131,9 @@ export function SubscriptionSettings() {
               <li>Advanced analytics</li>
               <li>Domain breakdown</li>
             </ul>
-            {isPro ? (
+            {isUnlimited ? (
+              <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Unlimited (admin)</p>
+            ) : isPro ? (
               <p className="text-sm font-medium text-green-600 dark:text-green-400">Current plan</p>
             ) : isPending ? (
               <Button
@@ -150,23 +161,31 @@ export function SubscriptionSettings() {
           <CardTitle className="text-base">Usage This Period</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Predictions used</span>
-            <span className="font-medium">{subscription.predsUsed} / {subscription.predsLimit}</span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className={`h-full rounded-full transition-all ${
-                usagePercent >= 80 ? "bg-amber-500" : "bg-primary"
-              }`}
-              style={{ width: `${Math.min(100, usagePercent)}%` }}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {isPro
-              ? "Resets monthly. Contact support for additional predictions."
-              : `${subscription.predsLimit - subscription.predsUsed} predictions remaining. Upgrade to Pro for more.`}
-          </p>
+          {isUnlimited ? (
+            <p className="text-sm font-medium text-green-600 dark:text-green-400">
+              Unlimited predictions — no usage limits on this account.
+            </p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Predictions used</span>
+                <span className="font-medium">{subscription.predsUsed} / {subscription.predsLimit}</span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    usagePercent >= 80 ? "bg-amber-500" : "bg-primary"
+                  }`}
+                  style={{ width: `${Math.min(100, usagePercent)}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isPro
+                  ? "Resets monthly. Contact support for additional predictions."
+                  : `${subscription.predsLimit - subscription.predsUsed} predictions remaining. Upgrade to Pro for more.`}
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

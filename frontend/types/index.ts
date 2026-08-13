@@ -39,6 +39,7 @@ export interface SubscriptionData {
   predsLimit: number;
   periodStart: Date | string;
   periodEnd: Date | string | null;
+  unlimited?: boolean;
 }
 
 export interface UserAnalyticsData {
