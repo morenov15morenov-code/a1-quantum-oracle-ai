@@ -1,6 +1,13 @@
 import { Navbar } from "@/components/layout/navbar";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default function UserLayout({ children }: { children: React.ReactNode }) {
+export default async function UserLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
