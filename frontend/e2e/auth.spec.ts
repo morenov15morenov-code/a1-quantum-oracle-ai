@@ -1,6 +1,25 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 
 const hasOAuth = !!process.env.GOOGLE_CLIENT_ID || !!process.env.GITHUB_CLIENT_ID;
+
+function compiledLimiter(): string {
+  try {
+    const stub = readFileSync(join(process.cwd(), ".next", "server", "middleware.js"), "utf8");
+    const ref = stub.match(/server\/chunks\/(\[root-of-the-server\]__[A-Za-z0-9_\-]+\._\.js)/);
+    const target = ref ? join(process.cwd(), ".next", "server", "chunks", ref[1]) : join(process.cwd(), ".next", "server", "middleware.js");
+    const raw = readFileSync(target, "utf8");
+    const idx = raw.indexOf("AUTH_RATE_LIMIT_MAX");
+    if (idx < 0) return `no-AUTH_RATE_LIMIT_MAX in ${target}`;
+    const authWin = raw.slice(Math.max(0, idx - 700), idx + 500).replace(/\s+/g, " ");
+    const fnIdx = raw.indexOf("function h(a,b)");
+    const fnWin = fnIdx >= 0 ? raw.slice(fnIdx, fnIdx + 450).replace(/\s+/g, " ") : "no-function-h";
+    return `L=[${authWin}] F=[${fnWin}]`;
+  } catch (e) {
+    return `read-failed:${String(e)}`;
+  }
+}
 
 test.describe("Authentication", () => {
   test("login page renders correctly", async ({ page }) => {
@@ -53,7 +72,7 @@ test.describe("Authentication", () => {
       } else {
         throw new Error(
           `Invalid-login message not shown. url=${page.url()} alert="${alertText}" ` +
-            `authEvents=[${authEvents.join(" | ")}] ${err instanceof Error ? err.message : String(err)}`
+            `authEvents=[${authEvents.join(" | ")}] mw=[${compiledLimiter()}] ${err instanceof Error ? err.message : String(err)}`
         );
       }
     } finally {
