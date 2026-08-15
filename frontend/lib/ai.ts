@@ -396,7 +396,8 @@ function generateQuestionAware(input: string, userContext: string, seed: string,
   const reading = READINGS[h % READINGS.length](subjectRef, opening);
   const guidance = GUIDANCE_LINES[(h + 2) % GUIDANCE_LINES.length];
   const celestial = getCelestialWindow();
-  const moonNote = `This reading arrives under the ${celestial.moonPhase.toLowerCase()} during ${celestial.season.toLowerCase()} — ${celestial.moonHint}.`;
+  const phaseName = celestial.moonPhase.toLowerCase();
+  const moonNote = `This reading arrives under the ${phaseName.includes("moon") ? phaseName : `${phaseName} moon`} during ${celestial.season.toLowerCase()} — ${celestial.moonHint}.`;
 
   const reasoningBase = `The oracle layered ${dimA.substring(0, 80)}... against ${dimB.substring(0, 80)}..., then focused the field through your specifics${clause ? ` (${clause})` : ""} and the exact wording of your question about "${subjectRef}". The dominant signal was weighted by the current celestial and energetic configuration (${celestial.moonPhase}, ${celestial.season}, ${Math.round(celestial.moonIllumination * 100)}% lunar illumination) and the day's signature.`;
 
