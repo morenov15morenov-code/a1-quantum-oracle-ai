@@ -12,10 +12,8 @@ function compiledLimiter(): string {
     const raw = readFileSync(target, "utf8");
     const idx = raw.indexOf("AUTH_RATE_LIMIT_MAX");
     if (idx < 0) return `no-AUTH_RATE_LIMIT_MAX in ${target}`;
-    const authWin = raw.slice(Math.max(0, idx - 700), idx + 500).replace(/\s+/g, " ");
-    const fnIdx = raw.indexOf("function h(a,b)");
-    const fnWin = fnIdx >= 0 ? raw.slice(fnIdx, fnIdx + 450).replace(/\s+/g, " ") : "no-function-h";
-    return `L=[${authWin}] F=[${fnWin}]`;
+    const authWin = raw.slice(Math.max(0, idx - 2600), idx + 600).replace(/\s+/g, " ");
+    return `L=[${authWin}]`;
   } catch (e) {
     return `read-failed:${String(e)}`;
   }
