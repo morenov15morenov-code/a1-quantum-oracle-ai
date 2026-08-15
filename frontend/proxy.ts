@@ -57,6 +57,7 @@ export async function proxy(request: NextRequest) {
   const isPublic =
     pathname === "/" ||
     pathname.startsWith("/api/health") ||
+    pathname.startsWith("/shared") ||
     pathname === "/request-reset" ||
     pathname === "/reset-password" ||
     pathname === "/verify-email" ||
