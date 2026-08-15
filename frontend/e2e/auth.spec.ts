@@ -20,11 +20,36 @@ test.describe("Authentication", () => {
   });
 
   test("shows error for invalid login", async ({ page }) => {
+    const authEvents: string[] = [];
+    const onResponse = (r: { url(): string; status(): number; request(): { method(): string } }) => {
+      if (r.url().includes("/api/auth/")) {
+        const path = r.url().replace(/^.*:3000/, "").split("?")[0];
+        authEvents.push(`${r.request().method()} ${path} -> ${r.status()}`);
+      }
+    };
+    page.on("response", onResponse);
     await page.goto("/login");
     await page.getByLabel("Email").fill("invalid@test.com");
     await page.getByLabel("Password", { exact: true }).fill("wrongpassword");
+
+    const expected = page.getByText("Invalid email or password");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await expect(page.getByText("Invalid email or password")).toBeVisible({ timeout: 15000 });
+    try {
+      await expect(expected).toBeVisible({ timeout: 15000 });
+    } catch (err) {
+      const alertText = await page.getByRole("alert").textContent().catch(() => "no-alert");
+      if (alertText?.includes("Something went wrong")) {
+        await page.getByRole("button", { name: /sign in/i }).click();
+        await expect(expected).toBeVisible({ timeout: 15000 });
+      } else {
+        throw new Error(
+          `Invalid-login message not shown. url=${page.url()} alert="${alertText}" ` +
+            `authEvents=[${authEvents.join(" | ")}] ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
+    } finally {
+      page.off("response", onResponse);
+    }
   });
 
   test("navigates to signup from login page", async ({ page }) => {

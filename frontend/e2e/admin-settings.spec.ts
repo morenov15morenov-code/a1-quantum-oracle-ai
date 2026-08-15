@@ -69,14 +69,14 @@ test.describe("Password reset flow", () => {
     await page.goto("/request-reset");
     await page.getByLabel("Email").fill("admin@a1quantumoracleai.com");
     await page.getByRole("button", { name: /send|reset/i }).click();
-    await expect(page.getByText(/if an account exists|sent|check your email/i)).toBeVisible();
+    await expect(page.getByText("If an account exists, a reset link has been sent.")).toBeVisible();
   });
 
   test("request reset shows success even for non-existent email", async ({ page }) => {
     await page.goto("/request-reset");
     await page.getByLabel("Email").fill("nonexistent@test.com");
     await page.getByRole("button", { name: /send|reset/i }).click();
-    await expect(page.getByText(/if an account exists|sent|check your email/i)).toBeVisible();
+    await expect(page.getByText("If an account exists, a reset link has been sent.")).toBeVisible();
   });
 
   test("reset password page renders with invalid token", async ({ page }) => {

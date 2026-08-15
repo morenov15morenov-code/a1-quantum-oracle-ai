@@ -1,3 +1,4 @@
+import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
@@ -13,7 +14,16 @@ function createDb() {
         "For Turso use: libsql://your-db.turso.io?authToken=your-token"
     );
   }
-  return drizzle(url, { schema });
+  const client = createClient({ url });
+  if (url.startsWith("file:")) {
+    try {
+      client.execute("PRAGMA journal_mode = WAL");
+      client.execute("PRAGMA busy_timeout = 10000");
+    } catch {
+      // file DB pragmas are best-effort
+    }
+  }
+  return drizzle(client, { schema });
 }
 
 export const db = globalForDb.db ?? createDb();
