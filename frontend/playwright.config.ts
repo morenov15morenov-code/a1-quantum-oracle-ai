@@ -27,6 +27,7 @@ export default defineConfig({
     env: {
       ...process.env,
       AUTH_RATE_LIMIT_MAX: process.env.AUTH_RATE_LIMIT_MAX || "2000",
+      LOGIN_RATE_LIMIT_MAX: process.env.LOGIN_RATE_LIMIT_MAX || "2000",
     },
   },
 });
