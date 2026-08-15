@@ -15,22 +15,22 @@ function cleanup() {
   }
 }
 
-function checkRateLimit(key: string, limit: number): boolean {
+function checkRateLimit(key: string, limit: number): { success: boolean; count: number } {
   cleanup();
   const now = Date.now();
   const entry = rateMap.get(key);
 
   if (!entry || now > entry.resetAt) {
     rateMap.set(key, { count: 1, resetAt: now + RATE_WINDOW });
-    return true;
+    return { success: true, count: 1 };
   }
 
   if (entry.count >= limit) {
-    return false;
+    return { success: false, count: entry.count };
   }
 
   entry.count++;
-  return true;
+  return { success: true, count: entry.count };
 }
 
 const API_RATE_LIMITS: Record<string, number> = {
@@ -69,17 +69,20 @@ export async function proxy(request: NextRequest) {
 
   if (isAuthApi) {
     const authPostLimit = Number(process.env.AUTH_RATE_LIMIT_MAX) || 60;
+    const limitHeader = { "X-Rate-Limit-Max": String(authPostLimit), "X-Rate-Limit-Count": "0" };
     if (request.method === "POST") {
       const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? "unknown";
       const key = `auth:${ip}`;
-      if (!checkRateLimit(key, authPostLimit)) {
+      const rl = checkRateLimit(key, authPostLimit);
+      limitHeader["X-Rate-Limit-Count"] = String(rl.count);
+      if (!rl.success) {
         return NextResponse.json(
           { error: "Too many requests" },
-          { status: 429, headers: { "Retry-After": "60", "X-Rate-Limit-Max": String(authPostLimit) } }
+          { status: 429, headers: { "Retry-After": "60", ...limitHeader } }
         );
       }
     }
-    return NextResponse.next({ headers: { "X-Rate-Limit-Max": String(authPostLimit) } });
+    return NextResponse.next({ headers: limitHeader });
   }
 
   let session;
@@ -103,7 +106,7 @@ export async function proxy(request: NextRequest) {
 
     const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? "unknown";
     const rateKey = `admin:${pathname}:${request.method}:${session.user.id}:${ip}`;
-    if (!checkRateLimit(rateKey, 20)) {
+    if (!checkRateLimit(rateKey, 20).success) {
       return NextResponse.json(
         { error: "Too many requests" },
         { status: 429, headers: { "Retry-After": "60" } }
@@ -129,7 +132,7 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    if (!checkRateLimit(rateKey, routeLimit)) {
+    if (!checkRateLimit(rateKey, routeLimit).success) {
       return NextResponse.json(
         { error: "Too many requests" },
         { status: 429, headers: { "Retry-After": "60" } }

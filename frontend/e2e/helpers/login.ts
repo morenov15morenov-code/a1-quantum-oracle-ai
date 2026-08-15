@@ -11,7 +11,10 @@ export async function signInAs(page: Page, email: string, password: string) {
     if (r.url().includes("/api/auth/")) {
       const path = r.url().replace(/^.*:3000/, "").split("?")[0];
       const limit = r.headers()["x-rate-limit-max"];
-      authEvents.push(`${r.request().method()} ${path} -> ${r.status()}${limit ? ` (limit=${limit})` : ""}`);
+      const count = r.headers()["x-rate-limit-count"];
+      authEvents.push(
+        `${r.request().method()} ${path} -> ${r.status()}${limit ? ` (limit=${limit}` : ""}${count ? `,count=${count})` : limit ? ")" : ""}`
+      );
     }
   };
   page.on("response", onResponse);
