@@ -2,10 +2,16 @@ import type { Page } from "@playwright/test";
 
 export async function signInAs(page: Page, email: string, password: string) {
   const authEvents: string[] = [];
-  const onResponse = (r: { url(): string; status(): number; request(): { method(): string } }) => {
+  const onResponse = (r: {
+    url(): string;
+    status(): number;
+    request(): { method(): string };
+    headers(): Record<string, string>;
+  }) => {
     if (r.url().includes("/api/auth/")) {
       const path = r.url().replace(/^.*:3000/, "").split("?")[0];
-      authEvents.push(`${r.request().method()} ${path} -> ${r.status()}`);
+      const limit = r.headers()["x-rate-limit-max"];
+      authEvents.push(`${r.request().method()} ${path} -> ${r.status()}${limit ? ` (limit=${limit})` : ""}`);
     }
   };
   page.on("response", onResponse);

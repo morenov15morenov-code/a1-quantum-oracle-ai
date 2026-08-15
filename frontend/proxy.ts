@@ -68,18 +68,18 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAuthApi) {
+    const authPostLimit = Number(process.env.AUTH_RATE_LIMIT_MAX) || 60;
     if (request.method === "POST") {
       const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? "unknown";
       const key = `auth:${ip}`;
-      const authPostLimit = Number(process.env.AUTH_RATE_LIMIT_MAX) || 60;
       if (!checkRateLimit(key, authPostLimit)) {
         return NextResponse.json(
           { error: "Too many requests" },
-          { status: 429, headers: { "Retry-After": "60" } }
+          { status: 429, headers: { "Retry-After": "60", "X-Rate-Limit-Max": String(authPostLimit) } }
         );
       }
     }
-    return NextResponse.next();
+    return NextResponse.next({ headers: { "X-Rate-Limit-Max": String(authPostLimit) } });
   }
 
   let session;
