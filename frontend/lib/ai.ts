@@ -482,44 +482,80 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
     return generateMockPrediction(input, systemPrompt);
   }
 
-  try {
+  const BANNED_PHRASES = [
+    "patience is required",
+    "the alignment is still forming",
+    "the oracle considers",
+    "the arc of your life",
+    "quietly rearranging",
+    "what you have built, where you have landed",
+    "rewards early, deliberate movement",
+    "the oracle reads the shift",
+    "this reading arrives under",
+    "a distinctive probability signature",
+    "shaped by the distance you have traveled",
+  ];
+
+  function containsBannedPhrase(text: string): boolean {
+    const lower = text.toLowerCase();
+    return BANNED_PHRASES.some((p) => lower.includes(p));
+  }
+
+  function containsNumber(text: string): boolean {
+    return /\$[\d,]+|\d+%|\d+\.\d+|\d+,\d+/.test(text);
+  }
+
+  async function callModel(modelName: string) {
     const { default: OpenAI } = await import("openai");
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    return openai.chat.completions.create({
+      model: modelName,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt || "You are an AI prediction and forecasting assistant.",
+        },
+        { role: "user", content: input },
+      ],
+      response_format: { type: "json_object" },
+    });
+  }
 
-    let model = "gpt-4o";
+  try {
+    let model = "gpt-5.6-sol";
     let completion;
     try {
-      completion = await openai.chat.completions.create({
-        model: "gpt-5.6-sol",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt || "You are an AI prediction and forecasting assistant.",
-          },
-          { role: "user", content: input },
-        ],
-        response_format: { type: "json_object" },
-      });
+      completion = await callModel("gpt-5.6-sol");
     } catch (modelError) {
       console.warn("gpt-5.6-sol unavailable, falling back to gpt-4o:", (modelError as Error).message);
       model = "gpt-4o";
-      completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt || "You are an AI prediction and forecasting assistant.",
-          },
-          { role: "user", content: input },
-        ],
-        response_format: { type: "json_object" },
-      });
+      completion = await callModel("gpt-4o");
     }
 
     const content = completion.choices[0]?.message?.content;
     if (!content) throw new Error("No response from AI");
 
     const parsed = JSON.parse(content) as PredictionResult;
+    const resultText = parsed.result || "";
+
+    if (containsBannedPhrase(resultText) || !containsNumber(resultText)) {
+      console.warn(`${model} produced low-quality response, retrying with gpt-4o`);
+      model = "gpt-4o";
+      completion = await callModel("gpt-4o");
+      const retryContent = completion.choices[0]?.message?.content;
+      if (retryContent) {
+        const retryParsed = JSON.parse(retryContent) as PredictionResult;
+        return {
+          result: retryParsed.result || "No prediction generated.",
+          confidence: Math.min(1, Math.max(0, retryParsed.confidence ?? 0.5)),
+          reasoning: retryParsed.reasoning || "No reasoning provided.",
+          tokensIn: completion.usage?.prompt_tokens,
+          tokensOut: completion.usage?.completion_tokens,
+          model,
+        };
+      }
+    }
+
     return {
       result: parsed.result || "No prediction generated.",
       confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
