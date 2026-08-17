@@ -27,7 +27,7 @@ export const predictions = sqliteTable("Prediction", {
   result: text("result").notNull(),
   confidence: real("confidence"),
   reasoning: text("reasoning"),
-  model: text("model").notNull().default("gpt-4o"),
+  model: text("model").notNull().default("gpt-5.6-sol"),
   tokensIn: integer("tokensIn"),
   tokensOut: integer("tokensOut"),
   shareSlug: text("shareSlug"),

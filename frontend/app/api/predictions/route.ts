@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       result: oracleResult.result,
       confidence: oracleResult.confidence,
       reasoning: oracleResult.reasoning,
-      model: process.env.OPENAI_API_KEY ? "gpt-4o" : "mock",
+      model: process.env.OPENAI_API_KEY ? "gpt-5.6-sol" : "mock",
       tokensIn: oracleResult.tokensIn ?? null,
       tokensOut: oracleResult.tokensOut ?? null,
     }).returning().get();

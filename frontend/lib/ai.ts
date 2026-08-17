@@ -4,6 +4,7 @@ export interface PredictionResult {
   reasoning: string;
   tokensIn?: number;
   tokensOut?: number;
+  model?: string;
 }
 
 function hashToRange(input: string, max: number): number {
@@ -485,17 +486,35 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
     const { default: OpenAI } = await import("openai");
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt || "You are an AI prediction and forecasting assistant. For each query, provide:\n1. A clear prediction/forecast\n2. A confidence score (0-1)\n3. Your reasoning\nRespond in JSON format: { \"result\": \"...\", \"confidence\": 0.XX, \"reasoning\": \"...\" }",
-        },
-        { role: "user", content: input },
-      ],
-      response_format: { type: "json_object" },
-    });
+    let model = "gpt-4o";
+    let completion;
+    try {
+      completion = await openai.chat.completions.create({
+        model: "gpt-5.6-sol",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt || "You are an AI prediction and forecasting assistant.",
+          },
+          { role: "user", content: input },
+        ],
+        response_format: { type: "json_object" },
+      });
+    } catch (modelError) {
+      console.warn("gpt-5.6-sol unavailable, falling back to gpt-4o:", (modelError as Error).message);
+      model = "gpt-4o";
+      completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt || "You are an AI prediction and forecasting assistant.",
+          },
+          { role: "user", content: input },
+        ],
+        response_format: { type: "json_object" },
+      });
+    }
 
     const content = completion.choices[0]?.message?.content;
     if (!content) throw new Error("No response from AI");
@@ -507,6 +526,7 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
       reasoning: parsed.reasoning || "No reasoning provided.",
       tokensIn: completion.usage?.prompt_tokens,
       tokensOut: completion.usage?.completion_tokens,
+      model,
     };
   } catch (error) {
     console.error("AI prediction error:", error);
