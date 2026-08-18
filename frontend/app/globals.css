@@ -130,7 +130,7 @@
 }
 
 html {
-  background-color: var(--color-background);
+  background-color: transparent;
 }
 
 body {
