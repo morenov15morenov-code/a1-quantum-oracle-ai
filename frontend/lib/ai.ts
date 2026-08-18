@@ -646,16 +646,14 @@ Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`,
       { name: "gpt-4-turbo" },
     ];
 
-    const results: Array<{ model: string; content: string | null }> = [];
-    for (const m of models) {
-      try {
-        const r = await callModel(m.name);
-        results.push({ model: m.name, content: r.choices[0]?.message?.content || null });
-      } catch (e: any) {
-        console.warn(`Model ${m.name} failed:`, e.message);
-        results.push({ model: m.name, content: null });
-      }
-    }
+    const settled = await Promise.allSettled(models.map(async (m) => {
+      const r = await callModel(m.name);
+      return { model: m.name, content: r.choices[0]?.message?.content || null };
+    }));
+
+    const results: Array<{ model: string; content: string | null }> = settled.map((s, i) =>
+      s.status === "fulfilled" ? s.value : (console.warn(`Model ${models[i].name} failed:`, s.reason), { model: models[i].name, content: null })
+    );
 
     const solContent = results[0]?.content;
     const terraContent = results[1]?.content;
