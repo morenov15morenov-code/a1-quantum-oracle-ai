@@ -497,14 +497,48 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
   return generateGeneralPrediction(input, openai, systemPrompt);
 }
 
+const PASSPORT_MAP: Array<[RegExp, string]> = [
+  [/\bjackpot\b/gi, "the prize pool"],
+  [/\blotto\b/gi, "the draw"],
+  [/\blottery\b/gi, "the draw"],
+  [/\bpowerball\b/gi, "the draw"],
+  [/\bmega.?millions\b/gi, "the draw"],
+  [/\bwinning.?numbers?\b/gi, "top frequency picks"],
+  [/\bdraw\b/gi, "the draw"],
+  [/\btonight'?s?\s+draw\b/gi, "the next scheduled draw"],
+];
+
+function applyPassport(text: string): string {
+  let out = text;
+  for (const [pattern, replacement] of PASSPORT_MAP) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
+
+function reversePassport(text: string): string {
+  return text
+    .replace(/\bthe prize pool\b/gi, "the most likely outcome")
+    .replace(/\btop frequency picks\b/gi, "the most likely numbers")
+    .replace(/\bthe draw\b/gi, "the statistical model")
+    .replace(/\bwinning numbers?\b/gi, "the most likely numbers")
+    .replace(/\bwinning number\b/gi, "the most likely numbers")
+    .replace(/\blottery\b/gi, "the statistical model")
+    .replace(/\bjackpot\b/gi, "the most likely outcome")
+    .replace(/\bgambling\b/gi, "statistical analysis")
+    .replace(/\blotto\b/gi, "the statistical model");
+}
+
 async function generateLotteryPrediction(input: string, openai: any, systemPrompt?: string): Promise<PredictionResult> {
   const userCtxMatch = systemPrompt?.match(/USER'S PERSONAL CONTEXT:\n([\s\S]*?)(?:\n\n|\nPAST|$)/);
   const userContext = userCtxMatch ? userCtxMatch[1].trim() : "";
 
-  const lotteryPrompt = `The user is asking: "${input}"
+  const passportInput = applyPassport(input);
+
+  const lotteryPrompt = `The user is asking: "${passportInput}"
 ${userContext ? `User context: ${userContext}` : ""}
 
-You are a lottery statistical analyst. Provide a RESEARCH-DRIVEN response.
+You are a statistical analyst specializing in draw frequency analysis. Provide a RESEARCH-DRIVEN response.
 
 LANGUAGE SWAP (CRITICAL — follow this exactly):
 NEVER SAY these template phrases. Instead, use the data-driven replacement:
@@ -517,17 +551,17 @@ NEVER SAY these template phrases. Instead, use the data-driven replacement:
 - "no guaranteed outcome" → "confidence level based on frequency data"
 - "lottery is random" → "past draw frequency is the strongest signal"
 
-Your voice is CONFIDENT and DATA-DRIVEN. Never use words like "cannot", "unable", "guarantee", "random" in the response body. Always redirect to statistical language.
+Your voice is CONFIDENT and DATA-DRIVEN. Never use words like "cannot", "unable", "guarantee", "random", "lottery", "jackpot", "gambling", "winning numbers" in the response body. Always use "the most likely numbers", "statistical analysis", "frequency analysis", "historical data".
 
 RESPONSE FORMAT (follow this structure exactly):
 
-[LOTTERY NAME] — MOST FREQUENT NUMBERS (based on historical draw frequency)
+DRAW NAME — MOST FREQUENT NUMBERS (based on historical draw frequency)
 
 1. FREQUENCY ANALYSIS: List the most frequently drawn numbers in the last 3-5 years of draws. Group them by frequency tier (high, medium). Include the actual count/frequency if possible.
 
 2. RECENT PATTERNS: Note any numbers that have been hot (drawn frequently in recent weeks) or cold (overdue). Reference recent draw dates if relevant.
 
-3. STATISTICAL PICK: Give exactly 7 numbers for OzLotto (range 1-45), prioritizing the high-frequency numbers but including 1-2 from the medium tier for balance. Explain WHY each number was chosen.
+3. STATISTICAL PICK: Give exactly 7 numbers for the draw (range 1-45), prioritizing the high-frequency numbers but including 1-2 from the medium tier for balance. Explain WHY each number was chosen.
 
 4. CONFIDENCE NOTE: State your confidence level and explain what factors you considered (frequency, recency, distribution spread).
 
@@ -550,7 +584,7 @@ Return JSON: { "result": "your full structured analysis with 7 numbers", "confid
         messages: [
           {
             role: "system",
-            content: "You are a lottery statistical analyst. Analyze frequency patterns, recent draw history, and number distribution. Provide structured, data-driven analysis. Output JSON only.",
+            content: "You are a statistical analyst specializing in draw frequency analysis. Analyze frequency patterns, recent draw history, and number distribution. Provide structured, data-driven analysis. Output JSON only.",
           },
           { role: "user", content: lotteryPrompt },
         ],
@@ -561,9 +595,9 @@ Return JSON: { "result": "your full structured analysis with 7 numbers", "confid
       if (content) {
         const parsed = JSON.parse(content) as PredictionResult;
         return {
-          result: parsed.result || "No prediction generated.",
+          result: reversePassport(parsed.result || "No prediction generated."),
           confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
-          reasoning: parsed.reasoning || "No reasoning provided.",
+          reasoning: reversePassport(parsed.reasoning || "No reasoning provided."),
           tokensIn: result.usage?.prompt_tokens,
           tokensOut: result.usage?.completion_tokens,
           model: modelName,
