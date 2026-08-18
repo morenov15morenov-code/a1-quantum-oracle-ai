@@ -486,6 +486,8 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
     "patience is required",
     "the alignment is still forming",
     "the oracle considers",
+    "the oracle sees",
+    "the oracle reads",
     "the arc of your life",
     "quietly rearranging",
     "what you have built, where you have landed",
@@ -494,11 +496,26 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
     "this reading arrives under",
     "a distinctive probability signature",
     "shaped by the distance you have traveled",
+    "a stranger's reading would miss",
+    "you will need to remove an obstacle",
+    "the waxing crescent",
+    "during leo season",
+    "intention",
   ];
 
   function containsBannedPhrase(text: string): boolean {
     const lower = text.toLowerCase();
     return BANNED_PHRASES.some((p) => lower.includes(p));
+  }
+
+  function isLowQuality(text: string): boolean {
+    const lower = text.toLowerCase().trim();
+    if (containsBannedPhrase(text)) return true;
+    if (lower.startsWith("the oracle")) return true;
+    if (lower.startsWith("on the matter")) return true;
+    if (!containsNumber(text)) return true;
+    if (text.split(" ").length < 20) return true;
+    return false;
   }
 
   function containsNumber(text: string): boolean {
@@ -538,7 +555,7 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
     const parsed = JSON.parse(content) as PredictionResult;
     const resultText = parsed.result || "";
 
-    if (containsBannedPhrase(resultText) || !containsNumber(resultText)) {
+    if (isLowQuality(resultText)) {
       console.warn(`${model} produced low-quality response, retrying with gpt-4o`);
       model = "gpt-4o";
       completion = await callModel("gpt-4o");

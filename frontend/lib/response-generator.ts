@@ -8,11 +8,37 @@ export interface ResponseDraft {
   tokensOut?: number;
 }
 
+const BANNED_RESPONSE_PHRASES = [
+  "patience is required",
+  "the alignment is still forming",
+  "the oracle considers",
+  "the oracle sees",
+  "the oracle reads",
+  "the arc of your life",
+  "quietly rearranging",
+  "what you have built, where you have landed",
+  "rewards early, deliberate movement",
+  "this reading arrives under",
+  "a distinctive probability signature",
+  "shaped by the distance you have traveled",
+  "a stranger's reading would miss",
+  "on the matter of",
+];
+
 export const ResponseGenerator = {
   run(forecast: ForecastResult): ResponseDraft {
-    const result = (forecast.result || "").trim() || "No prediction generated.";
+    let result = (forecast.result || "").trim() || "No prediction generated.";
     const confidence = Math.min(1, Math.max(0, forecast.confidence ?? 0.5));
-    const reasoning = (forecast.reasoning || "").trim() || "No reasoning provided.";
+    let reasoning = (forecast.reasoning || "").trim() || "No reasoning provided.";
+
+    const lower = result.toLowerCase();
+    const hasBanned = BANNED_RESPONSE_PHRASES.some((p) => lower.includes(p));
+
+    if (hasBanned) {
+      result = "The oracle needs a moment to recalibrate. Please try rephrasing your question more specifically — include numbers, dates, or concrete details for a better prediction.";
+      reasoning = "Response filtered: contained template phrases instead of a direct answer.";
+    }
+
     return {
       result,
       confidence,
