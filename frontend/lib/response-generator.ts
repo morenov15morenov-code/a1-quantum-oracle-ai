@@ -46,10 +46,11 @@ export const ResponseGenerator = {
     const confidence = Math.min(1, Math.max(0, forecast.confidence ?? 0.5));
     let reasoning = (forecast.reasoning || "").trim() || "No reasoning provided.";
 
+    const hasNumbers = /\d+/.test(result);
     const lower = result.toLowerCase();
     const hasBanned = BANNED_RESPONSE_PHRASES.some((p) => lower.includes(p));
 
-    if (hasBanned) {
+    if (hasBanned && !hasNumbers) {
       let cleaned = result;
       BANNED_RESPONSE_PHRASES.forEach((phrase) => {
         const regex = new RegExp(phrase, "gi");
