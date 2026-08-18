@@ -23,6 +23,11 @@ const BANNED_RESPONSE_PHRASES = [
   "shaped by the distance you have traveled",
   "a stranger's reading would miss",
   "on the matter of",
+  "the oracle needs a moment to recalibrate",
+  "the favorable path opens",
+  "gives .* a distinctive",
+  "notice the people who appear",
+  "intention",
 ];
 
 export const ResponseGenerator = {
@@ -34,7 +39,20 @@ export const ResponseGenerator = {
     const lower = result.toLowerCase();
     const hasBanned = BANNED_RESPONSE_PHRASES.some((p) => lower.includes(p));
 
-    if (hasBanned && !lower.match(/\d+\s*[,\-]\s*\d+/)) {
+    if (hasBanned) {
+      let cleaned = result;
+      BANNED_RESPONSE_PHRASES.forEach((phrase) => {
+        const regex = new RegExp(phrase, "gi");
+        cleaned = cleaned.replace(regex, "").replace(/\s{2,}/g, " ").trim();
+      });
+      cleaned = cleaned.replace(/\.\s*\./g, ".").replace(/^\.\s*/, "").trim();
+      if (cleaned.length > 30) {
+        result = cleaned;
+      } else {
+        result = "The oracle needs a moment to recalibrate. Please try rephrasing your question more specifically — include numbers, dates, or concrete details for a better prediction.";
+        reasoning = "Response filtered: contained template phrases instead of a direct answer.";
+      }
+    }
       result = "The oracle needs a moment to recalibrate. Please try rephrasing your question more specifically — include numbers, dates, or concrete details for a better prediction.";
       reasoning = "Response filtered: contained template phrases instead of a direct answer.";
     }
