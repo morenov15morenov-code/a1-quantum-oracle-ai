@@ -90,9 +90,9 @@ export async function POST(request: Request) {
       status: 201,
       headers: getRateLimitHeaders(10, rl.remaining),
     });
-  } catch (error) {
-    console.error("Prediction error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Prediction error:", error?.message || error);
+    return NextResponse.json({ error: "Internal server error", detail: error?.message || "unknown" }, { status: 500 });
   }
 }
 
