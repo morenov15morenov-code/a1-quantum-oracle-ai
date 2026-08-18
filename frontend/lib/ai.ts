@@ -482,72 +482,106 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
     return generateMockPrediction(input, systemPrompt);
   }
 
-  const BANNED_PHRASES = [
-    "patience is required",
-    "the alignment is still forming",
-    "the oracle considers",
-    "the oracle sees",
-    "the oracle reads",
-    "the oracle counsels",
-    "the oracle notes",
-    "the arc of your life",
-    "quietly rearranging",
-    "what you have built",
-    "rewards early",
-    "deliberate movement",
-    "this reading arrives",
-    "a distinctive probability",
-    "shaped by the distance",
-    "a stranger's reading",
-    "the waxing crescent",
-    "during leo season",
-    "intentions are still forming",
-    "the signal you have been waiting for",
-    "this alignment rewards",
-    "bend toward whatever",
-    "the currents surrounding",
-    "central theme:",
-  ];
+  const { default: OpenAI } = await import("openai");
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-  function containsBannedPhrase(text: string): boolean {
-    const lower = text.toLowerCase();
-    return BANNED_PHRASES.some((p) => lower.includes(p));
+  const isLottery = /lotto|lottery|ozlotto|powerball|mega.?millions|lottery|jackpot|winning.?numbers?|draw/i.test(input);
+
+  if (isLottery) {
+    return generateLotteryPrediction(input, openai, systemPrompt);
   }
 
-  function isLowQuality(text: string): boolean {
-    const lower = text.toLowerCase().trim();
-    if (containsBannedPhrase(text)) return true;
-    if (lower.startsWith("the oracle")) return true;
-    if (lower.startsWith("on the matter")) return true;
-    if (!containsNumber(text)) return true;
-    if (text.split(" ").length < 20) return true;
-    return false;
+  return generateGeneralPrediction(input, openai, systemPrompt);
+}
+
+async function generateLotteryPrediction(input: string, openai: OpenAI, systemPrompt?: string): Promise<PredictionResult> {
+  const userCtxMatch = systemPrompt?.match(/USER'S PERSONAL CONTEXT:\n([\s\S]*?)(?:\n\n|\nPAST|$)/);
+  const userContext = userCtxMatch ? userCtxMatch[1].trim() : "";
+
+  const lotteryPrompt = `You are a lottery data analyst. Analyze the following lottery question and provide your best prediction.
+
+USER CONTEXT: ${userContext || "None provided"}
+
+RULES:
+- Output exactly 7 numbers for OzLotto (range 1-45)
+- Include brief statistical reasoning (2-3 sentences max)
+- Format result as: "Based on frequency analysis of recent OzLotto draws: [7 numbers]. [brief reasoning]"
+- Do NOT use phrases like "the oracle sees", "patience is required", or any mystical language
+- Do NOT start sentences with "The oracle"
+- Be direct and factual like a data scientist
+- The numbers should be comma-separated
+
+Return JSON: { "result": "your prediction text with 7 numbers", "confidence": 0.XX, "reasoning": "brief statistical reasoning" }`;
+
+  const result = await openai.chat.completions.create({
+    model: "gpt-5.6-sol",
+    messages: [
+      {
+        role: "system",
+        content: "You are a lottery data analyst. Provide 7 numbers for OzLotto (1-45). Be factual and direct. No mystical language. Output JSON only.",
+      },
+      { role: "user", content: lotteryPrompt },
+    ],
+    response_format: { type: "json_object" },
+  });
+
+  const content = result.choices[0]?.message?.content;
+  if (content) {
+    const parsed = JSON.parse(content) as PredictionResult;
+    return {
+      result: parsed.result || "No prediction generated.",
+      confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
+      reasoning: parsed.reasoning || "No reasoning provided.",
+      tokensIn: result.usage?.prompt_tokens,
+      tokensOut: result.usage?.completion_tokens,
+      model: "gpt-5.6-sol",
+    };
   }
 
-  function containsNumber(text: string): boolean {
-    return /\$[\d,]+|\d+%|\d+\.\d+|\d+,\d+|\d+\s*[,\-]\s*\d+/.test(text);
-  }
+  throw new Error("Lottery prediction failed");
+}
+
+async function generateGeneralPrediction(input: string, openai: OpenAI, systemPrompt?: string): Promise<PredictionResult> {
+  const instructionBlock = systemPrompt
+    ? `[INSTRUCTIONS — FOLLOW THESE EXACTLY]\n${systemPrompt}\n[END INSTRUCTIONS]\n\nNow answer this question using the instructions above:\n`
+    : "";
 
   async function callModel(modelName: string) {
-    const { default: OpenAI } = await import("openai");
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-    const instructionBlock = systemPrompt
-      ? `[INSTRUCTIONS — FOLLOW THESE EXACTLY]\n${systemPrompt}\n[END INSTRUCTIONS]\n\nNow answer this question using the instructions above:\n`
-      : "";
-
     return openai.chat.completions.create({
       model: modelName,
       reasoning_effort: modelName.startsWith("gpt-5.6") ? "high" : undefined,
       messages: [
         {
           role: "system",
-          content: "You are A1 Quantum Oracle AI. Answer questions directly with specific numbers and concrete details. No vague spiritual filler. No third-person oracle references. Just answer the question.",
+          content: "You are A1 Quantum Oracle AI. Answer directly with specific numbers and concrete details. No vague spiritual filler. No third-person oracle references. Just answer the question. Output JSON.",
         },
         { role: "user", content: instructionBlock + input },
       ],
       response_format: { type: "json_object" },
     });
+  }
+
+  const BANNED_PHRASES = [
+    "patience is required", "the alignment is still forming",
+    "the oracle considers", "the oracle sees", "the oracle reads",
+    "the oracle counsels", "the oracle notes", "the arc of your life",
+    "quietly rearranging", "what you have built", "rewards early",
+    "deliberate movement", "this reading arrives", "a distinctive probability",
+    "shaped by the distance", "a stranger's reading", "the waxing crescent",
+    "during leo season", "intentions are still forming",
+    "the signal you have been waiting for", "this alignment rewards",
+    "bend toward whatever", "the currents surrounding", "central theme:",
+    "on the matter of", "the favorable path opens",
+  ];
+
+  function isLowQuality(text: string): boolean {
+    const lower = text.toLowerCase();
+    return BANNED_PHRASES.some((p) => lower.includes(p)) || lower.startsWith("the oracle") || lower.startsWith("on the matter");
+  }
+
+  function extractContent(settled: PromiseSettledResult<Awaited<ReturnType<typeof callModel>>>): string | null {
+    if (settled.status === "fulfilled") return settled.value.choices[0]?.message?.content || null;
+    return null;
   }
 
   try {
@@ -556,30 +590,30 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
       callModel("gpt-5.6-terra"),
     ]);
 
-    function extractContent(settled: PromiseSettledResult<Awaited<ReturnType<typeof callModel>>>): string | null {
-      if (settled.status === "fulfilled") {
-        return settled.value.choices[0]?.message?.content || null;
-      }
-      return null;
-    }
-
     const solContent = extractContent(solResult);
     const terraContent = extractContent(terraResult);
 
+    function parseResult(content: string): PredictionResult {
+      const parsed = JSON.parse(content) as PredictionResult;
+      return {
+        result: parsed.result || "No prediction generated.",
+        confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
+        reasoning: parsed.reasoning || "No reasoning provided.",
+      };
+    }
+
     if (solContent && terraContent) {
-      const { default: OpenAI } = await import("openai");
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       const fusion = await openai.chat.completions.create({
         model: "gpt-5.6-sol",
         reasoning_effort: "high",
         messages: [
           {
             role: "system",
-            content: "You are a fusion engine. You receive two AI predictions for the same question. Merge them into ONE superior answer. Take the best data points, most specific numbers, strongest reasoning from BOTH. Output a single unified response that is better than either alone. Never mention that there were two predictions. Never use template phrases like 'the oracle considers' or 'patience is required'. Just give the answer directly with specific numbers and concrete details.",
+            content: "You are a data analyst merging two AI predictions into ONE superior answer. Take the best data points and specific numbers from both. Never use template phrases. Give the answer directly. Output JSON.",
           },
           {
             role: "user",
-            content: `Question from user:\n\nQUESTION: ${input}\n\n--- PREDICTION A (from Sol model) ---\n${solContent}\n\n--- PREDICTION B (from Terra model) ---\n${terraContent}\n\n---\nFUSE these into ONE superior prediction. Merge the best parts. Output JSON: { "result": "...", "confidence": 0.XX, "reasoning": "..." }`,
+            content: `Merge these two predictions into one best answer:\n\n--- PREDICTION A ---\n${solContent}\n\n--- PREDICTION B ---\n${terraContent}\n\nOutput JSON: { "result": "...", "confidence": 0.XX, "reasoning": "..." }`,
           },
         ],
         response_format: { type: "json_object" },
@@ -587,51 +621,28 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
 
       const fusionContent = fusion.choices[0]?.message?.content;
       if (fusionContent) {
-        const parsed = JSON.parse(fusionContent) as PredictionResult;
-        const fusionResult = parsed.result || "";
-
-        if (isLowQuality(fusionResult)) {
-          console.warn("Fusion produced low-quality response, trying single Terra call");
-          const singleResult = await callModel("gpt-5.6-terra");
-          const singleContent = singleResult.choices[0]?.message?.content;
-          if (singleContent) {
-            const singleParsed = JSON.parse(singleContent) as PredictionResult;
-            return {
-              result: singleParsed.result || "No prediction generated.",
-              confidence: Math.min(1, Math.max(0, singleParsed.confidence ?? 0.5)),
-              reasoning: singleParsed.reasoning || "No reasoning provided.",
-              tokensIn: singleResult.usage?.prompt_tokens,
-              tokensOut: singleResult.usage?.completion_tokens,
-              model: "gpt-5.6-terra",
-            };
-          }
+        const parsed = parseResult(fusionContent);
+        if (!isLowQuality(parsed.result)) {
+          return { ...parsed, tokensIn: fusion.usage?.prompt_tokens, tokensOut: fusion.usage?.completion_tokens, model: "gpt-5.6-fusion" };
         }
-
-        return {
-          result: parsed.result || "No prediction generated.",
-          confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
-          reasoning: parsed.reasoning || "No reasoning provided.",
-          tokensIn: fusion.usage?.prompt_tokens,
-          tokensOut: fusion.usage?.completion_tokens,
-          model: "gpt-5.6-fusion",
-        };
+        console.warn("Fusion response was low quality, falling back to single model");
       }
     }
 
-    const fallback = solContent || terraContent;
-    if (fallback) {
-      const parsed = JSON.parse(fallback) as PredictionResult;
-      return {
-        result: parsed.result || "No prediction generated.",
-        confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
-        reasoning: parsed.reasoning || "No reasoning provided.",
-        tokensIn: undefined,
-        tokensOut: undefined,
-        model: solContent ? "gpt-5.6-sol" : "gpt-5.6-terra",
-      };
+    if (solContent) {
+      const parsed = parseResult(solContent);
+      if (!isLowQuality(parsed.result)) {
+        return { ...parsed, model: "gpt-5.6-sol" };
+      }
+    }
+    if (terraContent) {
+      const parsed = parseResult(terraContent);
+      if (!isLowQuality(parsed.result)) {
+        return { ...parsed, model: "gpt-5.6-terra" };
+      }
     }
 
-    throw new Error("Both models failed");
+    throw new Error("All AI responses were low quality");
   } catch (error) {
     console.error("AI prediction error:", error);
     return generateMockPrediction(input, systemPrompt);
