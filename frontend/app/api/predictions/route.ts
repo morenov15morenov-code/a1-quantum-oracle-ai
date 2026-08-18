@@ -9,124 +9,124 @@ import { refreshSubscription, nextFreeRefill, isAdminUser } from "@/lib/subscrip
 import { parsePagination, paginationError } from "@/lib/pagination";
 import { eq, sql } from "drizzle-orm";
 
+export const maxDuration = 60;
+
+function logFailed(input: string, error: string) {
+  console.error(`[${new Date().toISOString()}] FAILED | INPUT: ${input.substring(0, 200)} | ERROR: ${error}`);
+}
+
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  const isAdmin = isAdminUser(session);
-
-  let rl: { success: boolean; remaining: number } = { success: true, remaining: 10 };
-  if (!isAdmin) {
-    rl = await rateLimit(`predict:${session.user.id}:${ip}`, 10, 60000);
-    if (!rl.success) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
-    }
-  }
-
+  let input = "";
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ prophecy: "Unauthorized." }, { status: 401 });
+    }
+
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const isAdmin = isAdminUser(session);
+
+    if (!isAdmin) {
+      const rl = await rateLimit(`predict:${session.user.id}:${ip}`, 10, 60000);
+      if (!rl.success) {
+        return NextResponse.json({ prophecy: "Too many requests. Wait a moment." }, { status: 429 });
+      }
+    }
+
     const subscription = await refreshSubscription(session.user.id);
 
-    if (process.env.EMAIL_VERIFICATION_REQUIRED === "true" && !session.user.emailVerified) {
-      return NextResponse.json(
-        { error: "Please verify your email before making predictions. Check your inbox for the verification link." },
-        { status: 403 }
-      );
-    }
-
     if (!isAdmin && (subscription.tier === "FREE" || subscription.status === "PENDING") && subscription.predsUsed >= subscription.predsLimit) {
-      const pendingApproval = subscription.status === "PENDING";
       const nextRefill = nextFreeRefill(subscription.periodStart);
       const remainingMs = Math.max(0, nextRefill.getTime() - Date.now());
       const days = Math.floor(remainingMs / 86400000);
       const hours = Math.floor((remainingMs % 86400000) / 3600000);
-      return NextResponse.json(
-        {
-          error: pendingApproval
-            ? "PRO upgrade is pending approval. You have reached the free prediction limit."
-            : `Free prediction limit reached. Your next free question unlocks in ${days}d ${hours}h. Upgrade to Pro for unlimited predictions.`,
-          nextFreeInMs: remainingMs,
-        },
-        { status: 403 }
-      );
+      return NextResponse.json({
+        prophecy: subscription.status === "PENDING"
+          ? "PRO upgrade is pending approval."
+          : `Free limit reached. Next free question in ${days}d ${hours}h. Upgrade to Pro for unlimited.`,
+      });
     }
 
     const body = await request.json();
     const parsed = oracleQuerySchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+      return NextResponse.json({ prophecy: "Invalid input." }, { status: 400 });
     }
 
-    const { input, context, domainCategory } = parsed.data;
+    input = parsed.data.input;
+    const { context, domainCategory } = parsed.data;
 
     let oracleResult;
     try {
       oracleResult = await queryOracle({ input, context, domainCategory, userId: session.user.id });
-    } catch (oracleErr: any) {
-      console.error("Oracle pipeline error:", oracleErr?.message || oracleErr);
-      oracleResult = {
-        result: "The Oracle is silent on this matter.",
-        confidence: 0,
-        reasoning: "The prediction pipeline encountered an error. Please try again.",
-      };
+    } catch (e: any) {
+      logFailed(input, e?.message || String(e));
+      oracleResult = null;
     }
 
-    if (!oracleResult?.result || oracleResult.result.trim().length === 0) {
-      oracleResult.result = "The Oracle is silent on this matter.";
+    const prophecy = oracleResult?.result?.trim() || "The Oracle is silent on this matter.";
+    const confidence = oracleResult?.confidence ?? 0;
+    const reasoning = oracleResult?.reasoning?.trim() || "No reasoning available.";
+    const model = oracleResult?.model || (process.env.OPENAI_API_KEY ? "gpt-4o" : "mock");
+
+    let predictionId = "unknown";
+    try {
+      const prediction = await db.insert(predictions).values({
+        userId: session.user.id,
+        input,
+        context: context || null,
+        domainCategory: domainCategory || null,
+        result: prophecy,
+        confidence,
+        reasoning,
+        model,
+        tokensIn: oracleResult?.tokensIn ?? null,
+        tokensOut: oracleResult?.tokensOut ?? null,
+      }).returning().get();
+      predictionId = prediction.id;
+
+      await db.update(subscriptions)
+        .set({ predsUsed: sql`${subscriptions.predsUsed} + 1` })
+        .where(eq(subscriptions.userId, session.user.id))
+        .run();
+
+      await db.insert(analyticsEvents).values({
+        event: "prediction_created",
+        userId: session.user.id,
+        metadata: JSON.stringify({ predictionId: prediction.id }),
+      }).run();
+    } catch (dbErr: any) {
+      logFailed(input, `DB_ERROR: ${dbErr?.message || dbErr}`);
     }
 
-    const prediction = await db.insert(predictions).values({
-      userId: session.user.id,
-      input,
-      context: context || null,
-      domainCategory: domainCategory || null,
-      result: oracleResult.result,
-      confidence: oracleResult.confidence,
-      reasoning: oracleResult.reasoning,
-      model: process.env.OPENAI_API_KEY ? "gpt-5.6-sol" : "mock",
-      tokensIn: oracleResult.tokensIn ?? null,
-      tokensOut: oracleResult.tokensOut ?? null,
-    }).returning().get();
-
-    await db.update(subscriptions)
-      .set({ predsUsed: sql`${subscriptions.predsUsed} + 1` })
-      .where(eq(subscriptions.userId, session.user.id))
-      .run();
-
-    await db.insert(analyticsEvents).values({
-      event: "prediction_created",
-      userId: session.user.id,
-      metadata: JSON.stringify({ predictionId: prediction.id }),
-    }).run();
-
-    return NextResponse.json(prediction, {
-      status: 201,
-      headers: getRateLimitHeaders(10, rl.remaining),
+    return NextResponse.json({
+      prophecy,
+      confidence,
+      reasoning,
+      model,
+      id: predictionId,
     });
   } catch (error: any) {
-    console.error("Prediction error:", error?.message || error);
-    return NextResponse.json(
-      { result: "The Oracle is silent on this matter.", confidence: 0, reasoning: "An unexpected error occurred.", error: error?.message || "unknown" },
-      { status: 200 },
-    );
+    logFailed(input || "unknown", error?.message || String(error));
+    return NextResponse.json({
+      prophecy: "The Oracle encountered a disturbance in the quantum field.",
+    });
   }
 }
 
 export async function GET(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { searchParams } = new URL(request.url);
-  const pagination = parsePagination(searchParams);
-  if (!pagination) {
-    return NextResponse.json(paginationError(), { status: 400 });
-  }
-
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ prophecy: "Unauthorized." }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const pagination = parsePagination(searchParams);
+    if (!pagination) {
+      return NextResponse.json(paginationError(), { status: 400 });
+    }
+
     const { page, limit, skip } = pagination;
 
     const preds = await db.select().from(predictions)
@@ -142,8 +142,8 @@ export async function GET(request: Request) {
       .all();
 
     return NextResponse.json({ predictions: preds, total, page, totalPages: Math.ceil(total / limit) });
-  } catch (error) {
-    console.error("Predictions GET error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Predictions GET error:", error?.message || error);
+    return NextResponse.json({ predictions: [], total: 0, page: 1, totalPages: 0 });
   }
 }

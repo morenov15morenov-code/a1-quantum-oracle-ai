@@ -6,6 +6,7 @@ export interface ResponseDraft {
   reasoning: string;
   tokensIn?: number;
   tokensOut?: number;
+  model?: string;
 }
 
 const BANNED_RESPONSE_PHRASES = [
@@ -71,6 +72,7 @@ export const ResponseGenerator = {
       reasoning,
       tokensIn: forecast.tokensIn,
       tokensOut: forecast.tokensOut,
+      model: forecast.model,
     };
   },
 

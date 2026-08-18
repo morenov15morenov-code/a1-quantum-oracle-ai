@@ -4,6 +4,11 @@
   "buildCommand": "next build --webpack",
   "installCommand": "npm install",
   "regions": ["iad1"],
+  "functions": {
+    "app/api/predictions/route.ts": {
+      "maxDuration": 60
+    }
+  },
   "headers": [
     {
       "source": "/api/(.*)",

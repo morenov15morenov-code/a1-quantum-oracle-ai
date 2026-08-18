@@ -518,6 +518,7 @@ Return JSON: { "result": "your prediction text with 7 numbers", "confidence": 0.
     try {
       const result = await openai.chat.completions.create({
         model: modelName,
+        max_tokens: 1000,
         messages: [
           {
             role: "system",
