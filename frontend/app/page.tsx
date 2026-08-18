@@ -116,10 +116,10 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="relative z-10 pb-8 text-center text-xs">
-        <p className="text-gradient-red font-semibold">A creation of Alexander Morenov & S/F Technologies</p>
-        <p className="mt-1 text-gradient-red">29 Bringelly Ave, Pendle Hill, Sydney NSW, Australia</p>
-        <p className="mt-1 text-gradient-red">aonequantumoracleai@gmail.com | +61 420 922 489</p>
+      <footer className="relative z-10 pb-8 text-center text-xs font-semibold text-black">
+        <p>A creation of Alexander Morenov & S/F Technologies</p>
+        <p className="mt-1">29 Bringelly Ave, Pendle Hill, Sydney NSW, Australia</p>
+        <p className="mt-1">aonequantumoracleai@gmail.com | +61 420 922 489</p>
       </footer>
     </div>
   );
