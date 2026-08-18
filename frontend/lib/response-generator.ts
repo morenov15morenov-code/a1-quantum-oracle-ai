@@ -23,11 +23,8 @@ const BANNED_RESPONSE_PHRASES = [
   "shaped by the distance you have traveled",
   "a stranger's reading would miss",
   "on the matter of",
-  "the oracle needs a moment to recalibrate",
   "the favorable path opens",
-  "gives .* a distinctive",
   "notice the people who appear",
-  "intention",
 ];
 
 export const ResponseGenerator = {
@@ -52,9 +49,6 @@ export const ResponseGenerator = {
         result = "The oracle needs a moment to recalibrate. Please try rephrasing your question more specifically — include numbers, dates, or concrete details for a better prediction.";
         reasoning = "Response filtered: contained template phrases instead of a direct answer.";
       }
-    }
-      result = "The oracle needs a moment to recalibrate. Please try rephrasing your question more specifically — include numbers, dates, or concrete details for a better prediction.";
-      reasoning = "Response filtered: contained template phrases instead of a direct answer.";
     }
 
     return {
