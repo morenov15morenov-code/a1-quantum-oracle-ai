@@ -494,7 +494,7 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
   return generateGeneralPrediction(input, openai, systemPrompt);
 }
 
-async function generateLotteryPrediction(input: string, openai: OpenAI, systemPrompt?: string): Promise<PredictionResult> {
+async function generateLotteryPrediction(input: string, openai: any, systemPrompt?: string): Promise<PredictionResult> {
   const userCtxMatch = systemPrompt?.match(/USER'S PERSONAL CONTEXT:\n([\s\S]*?)(?:\n\n|\nPAST|$)/);
   const userContext = userCtxMatch ? userCtxMatch[1].trim() : "";
 
@@ -541,7 +541,7 @@ Return JSON: { "result": "your prediction text with 7 numbers", "confidence": 0.
   throw new Error("Lottery prediction failed");
 }
 
-async function generateGeneralPrediction(input: string, openai: OpenAI, systemPrompt?: string): Promise<PredictionResult> {
+async function generateGeneralPrediction(input: string, openai: any, systemPrompt?: string): Promise<PredictionResult> {
   const instructionBlock = systemPrompt
     ? `[INSTRUCTIONS — FOLLOW THESE EXACTLY]\n${systemPrompt}\n[END INSTRUCTIONS]\n\nNow answer this question using the instructions above:\n`
     : "";
