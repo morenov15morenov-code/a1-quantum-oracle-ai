@@ -9,62 +9,11 @@ export interface ResponseDraft {
   model?: string;
 }
 
-const BANNED_RESPONSE_PHRASES = [
-  "patience is required",
-  "the alignment is still forming",
-  "the oracle considers",
-  "the oracle sees",
-  "the oracle reads",
-  "the oracle counsels",
-  "the oracle notes",
-  "the oracle detects",
-  "the arc of your life",
-  "quietly rearranging",
-  "what you have built",
-  "where you have landed",
-  "rewards early",
-  "deliberate movement",
-  "this reading arrives",
-  "a distinctive probability",
-  "shaped by the distance",
-  "a stranger's reading",
-  "on the matter of",
-  "the favorable path opens",
-  "notice the people who appear",
-  "the waxing crescent",
-  "during leo season",
-  "intentions are still forming",
-  "the signal you have been waiting for",
-  "this alignment rewards",
-  "bend toward whatever",
-  "the currents surrounding",
-  "central theme:",
-];
-
 export const ResponseGenerator = {
   run(forecast: ForecastResult): ResponseDraft {
-    let result = (forecast.result || "").trim() || "No prediction generated.";
+    const result = (forecast.result || "").trim() || "No prediction generated.";
     const confidence = Math.min(1, Math.max(0, forecast.confidence ?? 0.5));
-    let reasoning = (forecast.reasoning || "").trim() || "No reasoning provided.";
-
-    const hasNumbers = /\d+/.test(result);
-    const lower = result.toLowerCase();
-    const hasBanned = BANNED_RESPONSE_PHRASES.some((p) => lower.includes(p));
-
-    if (hasBanned && !hasNumbers) {
-      let cleaned = result;
-      BANNED_RESPONSE_PHRASES.forEach((phrase) => {
-        const regex = new RegExp(phrase, "gi");
-        cleaned = cleaned.replace(regex, "").replace(/\s{2,}/g, " ").trim();
-      });
-      cleaned = cleaned.replace(/\.\s*\./g, ".").replace(/^\.\s*/, "").trim();
-      if (cleaned.length > 30) {
-        result = cleaned;
-      } else {
-        result = "The oracle needs a moment to recalibrate. Please try rephrasing your question more specifically — include numbers, dates, or concrete details for a better prediction.";
-        reasoning = "Response filtered: contained template phrases instead of a direct answer.";
-      }
-    }
+    const reasoning = (forecast.reasoning || "").trim() || "No reasoning provided.";
 
     return {
       result,

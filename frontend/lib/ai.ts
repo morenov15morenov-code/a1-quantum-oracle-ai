@@ -561,30 +561,12 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
       messages: [
         {
           role: "system",
-          content: "You are A1 Quantum Oracle AI. Answer directly with specific numbers and concrete details. No vague spiritual filler. No third-person oracle references. Just answer the question. Output JSON.",
+          content: "You are A1 Quantum Oracle AI. Answer directly with specific numbers and concrete details. Output JSON.",
         },
         { role: "user", content: instructionBlock + input },
       ],
       response_format: { type: "json_object" },
     });
-  }
-
-  const BANNED_PHRASES = [
-    "patience is required", "the alignment is still forming",
-    "the oracle considers", "the oracle sees", "the oracle reads",
-    "the oracle counsels", "the oracle notes", "the arc of your life",
-    "quietly rearranging", "what you have built", "rewards early",
-    "deliberate movement", "this reading arrives", "a distinctive probability",
-    "shaped by the distance", "a stranger's reading", "the waxing crescent",
-    "during leo season", "intentions are still forming",
-    "the signal you have been waiting for", "this alignment rewards",
-    "bend toward whatever", "the currents surrounding", "central theme:",
-    "on the matter of", "the favorable path opens",
-  ];
-
-  function isLowQuality(text: string): boolean {
-    const lower = text.toLowerCase();
-    return BANNED_PHRASES.some((p) => lower.includes(p)) || lower.startsWith("the oracle") || lower.startsWith("on the matter");
   }
 
   try {
@@ -623,7 +605,7 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
           messages: [
             {
               role: "system",
-              content: "You are a data analyst merging two AI predictions into ONE superior answer. Take the best data points and specific numbers from both. Never use template phrases. Give the answer directly. Output JSON.",
+              content: "You are a data analyst merging two AI predictions into ONE superior answer. Take the best data points and specific numbers from both. Give the answer directly. Output JSON.",
             },
             {
               role: "user",
@@ -636,10 +618,7 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
         const fusionContent = fusion.choices[0]?.message?.content;
         if (fusionContent) {
           const parsed = parseResult(fusionContent);
-          if (!isLowQuality(parsed.result)) {
-            return { ...parsed, tokensIn: fusion.usage?.prompt_tokens, tokensOut: fusion.usage?.completion_tokens, model: "gpt-4o-fusion" };
-          }
-          console.warn("Fusion response was low quality, falling back to single model");
+          return { ...parsed, tokensIn: fusion.usage?.prompt_tokens, tokensOut: fusion.usage?.completion_tokens, model: "gpt-4o-fusion" };
         }
       } catch (e: any) {
         console.warn("Fusion call failed:", e.message);
@@ -647,19 +626,13 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
     }
 
     if (solContent) {
-      const parsed = parseResult(solContent);
-      if (!isLowQuality(parsed.result)) {
-        return { ...parsed, model: "gpt-4o" };
-      }
+      return { ...parseResult(solContent), model: "gpt-4o" };
     }
     if (terraContent) {
-      const parsed = parseResult(terraContent);
-      if (!isLowQuality(parsed.result)) {
-        return { ...parsed, model: "gpt-4-turbo" };
-      }
+      return { ...parseResult(terraContent), model: "gpt-4-turbo" };
     }
 
-    throw new Error("All AI responses were low quality");
+    throw new Error("All AI models returned empty responses");
   } catch (error) {
     console.error("AI prediction error:", error);
     return generateMockPrediction(input, systemPrompt);
