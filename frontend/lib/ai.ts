@@ -550,63 +550,63 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
       callModel("gpt-5.6-terra"),
     ]);
 
-    function extractResult(settled: PromiseSettledResult<Awaited<ReturnType<typeof callModel>>>, modelName: string) {
+    function extractContent(settled: PromiseSettledResult<Awaited<ReturnType<typeof callModel>>>): string | null {
       if (settled.status === "fulfilled") {
-        const content = settled.value.choices[0]?.message?.content;
-        if (content) {
-          const parsed = JSON.parse(content) as PredictionResult;
-          return { parsed, model: modelName };
-        }
+        return settled.value.choices[0]?.message?.content || null;
       }
       return null;
     }
 
-    const solParsed = extractResult(solResult, "gpt-5.6-sol");
-    const terraParsed = extractResult(terraResult, "gpt-5.6-terra");
+    const solContent = extractContent(solResult);
+    const terraContent = extractContent(terraResult);
 
-    function scoreCandidate(c: { parsed: PredictionResult; model: string } | null): number {
-      if (!c) return -1;
-      const text = c.parsed.result || "";
-      if (isLowQuality(text)) return -1;
-      let score = 0;
-      if (containsNumber(text)) score += 2;
-      if (text.split(" ").length >= 20) score += 1;
-      if (c.model === "gpt-5.6-sol") score += 0.5;
-      return score;
-    }
+    if (solContent && terraContent) {
+      const { default: OpenAI } = await import("openai");
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const fusion = await openai.chat.completions.create({
+        model: "gpt-5.6-sol",
+        reasoning_effort: "high",
+        messages: [
+          {
+            role: "system",
+            content: "You are a fusion engine. You receive two AI predictions for the same question. Merge them into ONE superior answer. Take the best data points, most specific numbers, strongest reasoning from BOTH. Output a single unified response that is better than either alone. Never mention that there were two predictions. Never use template phrases like 'the oracle considers' or 'patience is required'. Just give the answer directly with specific numbers and concrete details.",
+          },
+          {
+            role: "user",
+            content: `Question from user:\n\nQUESTION: ${input}\n\n--- PREDICTION A (from Sol model) ---\n${solContent}\n\n--- PREDICTION B (from Terra model) ---\n${terraContent}\n\n---\nFUSE these into ONE superior prediction. Merge the best parts. Output JSON: { "result": "...", "confidence": 0.XX, "reasoning": "..." }`,
+          },
+        ],
+        response_format: { type: "json_object" },
+      });
 
-    const solScore = scoreCandidate(solParsed);
-    const terraScore = scoreCandidate(terraParsed);
-
-    let winner = solScore >= terraScore ? solParsed : terraParsed;
-    let model = winner?.model || "gpt-5.6-sol";
-
-    if (!winner || (solScore < 0 && terraScore < 0)) {
-      console.warn("Both Sol and Terra produced low-quality responses, retrying Sol with max effort");
-      model = "gpt-5.6-sol";
-      const retry = await callModel("gpt-5.6-sol");
-      const retryContent = retry.choices[0]?.message?.content;
-      if (retryContent) {
-        const retryParsed = JSON.parse(retryContent) as PredictionResult;
+      const fusionContent = fusion.choices[0]?.message?.content;
+      if (fusionContent) {
+        const parsed = JSON.parse(fusionContent) as PredictionResult;
         return {
-          result: retryParsed.result || "No prediction generated.",
-          confidence: Math.min(1, Math.max(0, retryParsed.confidence ?? 0.5)),
-          reasoning: retryParsed.reasoning || "No reasoning provided.",
-          tokensIn: retry.usage?.prompt_tokens,
-          tokensOut: retry.usage?.completion_tokens,
-          model,
+          result: parsed.result || "No prediction generated.",
+          confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
+          reasoning: parsed.reasoning || "No reasoning provided.",
+          tokensIn: fusion.usage?.prompt_tokens,
+          tokensOut: fusion.usage?.completion_tokens,
+          model: "gpt-5.6-fusion",
         };
       }
     }
 
-    return {
-      result: winner!.parsed.result || "No prediction generated.",
-      confidence: Math.min(1, Math.max(0, winner!.parsed.confidence ?? 0.5)),
-      reasoning: winner!.parsed.reasoning || "No reasoning provided.",
-      tokensIn: undefined,
-      tokensOut: undefined,
-      model,
-    };
+    const fallback = solContent || terraContent;
+    if (fallback) {
+      const parsed = JSON.parse(fallback) as PredictionResult;
+      return {
+        result: parsed.result || "No prediction generated.",
+        confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
+        reasoning: parsed.reasoning || "No reasoning provided.",
+        tokensIn: undefined,
+        tokensOut: undefined,
+        model: solContent ? "gpt-5.6-sol" : "gpt-5.6-terra",
+      };
+    }
+
+    throw new Error("Both models failed");
   } catch (error) {
     console.error("AI prediction error:", error);
     return generateMockPrediction(input, systemPrompt);
