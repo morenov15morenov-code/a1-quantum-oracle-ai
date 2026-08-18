@@ -550,9 +550,9 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
     try {
       completion = await callModel("gpt-5.6-sol");
     } catch (modelError) {
-      console.warn("gpt-5.6-sol unavailable, falling back to gpt-4o:", (modelError as Error).message);
-      model = "gpt-4o";
-      completion = await callModel("gpt-4o");
+      console.warn("gpt-5.6-sol unavailable, trying gpt-5.6-terra:", (modelError as Error).message);
+      model = "gpt-5.6-terra";
+      completion = await callModel("gpt-5.6-terra");
     }
 
     const content = completion.choices[0]?.message?.content;
@@ -562,9 +562,9 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
     const resultText = parsed.result || "";
 
     if (isLowQuality(resultText)) {
-      console.warn(`${model} produced low-quality response, retrying with gpt-4o`);
-      model = "gpt-4o";
-      completion = await callModel("gpt-4o");
+      console.warn(`${model} produced low-quality response, retrying with gpt-5.6-terra`);
+      model = "gpt-5.6-terra";
+      completion = await callModel("gpt-5.6-terra");
       const retryContent = completion.choices[0]?.message?.content;
       if (retryContent) {
         const retryParsed = JSON.parse(retryContent) as PredictionResult;
