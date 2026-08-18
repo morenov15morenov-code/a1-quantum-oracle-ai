@@ -545,46 +545,66 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
   }
 
   try {
-    let model = "gpt-5.6-sol";
-    let completion;
-    try {
-      completion = await callModel("gpt-5.6-sol");
-    } catch (modelError) {
-      console.warn("gpt-5.6-sol unavailable, trying gpt-5.6-terra:", (modelError as Error).message);
-      model = "gpt-5.6-terra";
-      completion = await callModel("gpt-5.6-terra");
+    const [solResult, terraResult] = await Promise.allSettled([
+      callModel("gpt-5.6-sol"),
+      callModel("gpt-5.6-terra"),
+    ]);
+
+    function extractResult(settled: PromiseSettledResult<Awaited<ReturnType<typeof callModel>>>, modelName: string) {
+      if (settled.status === "fulfilled") {
+        const content = settled.value.choices[0]?.message?.content;
+        if (content) {
+          const parsed = JSON.parse(content) as PredictionResult;
+          return { parsed, model: modelName };
+        }
+      }
+      return null;
     }
 
-    const content = completion.choices[0]?.message?.content;
-    if (!content) throw new Error("No response from AI");
+    const solParsed = extractResult(solResult, "gpt-5.6-sol");
+    const terraParsed = extractResult(terraResult, "gpt-5.6-terra");
 
-    const parsed = JSON.parse(content) as PredictionResult;
-    const resultText = parsed.result || "";
+    function scoreCandidate(c: { parsed: PredictionResult; model: string } | null): number {
+      if (!c) return -1;
+      const text = c.parsed.result || "";
+      if (isLowQuality(text)) return -1;
+      let score = 0;
+      if (containsNumber(text)) score += 2;
+      if (text.split(" ").length >= 20) score += 1;
+      if (c.model === "gpt-5.6-sol") score += 0.5;
+      return score;
+    }
 
-    if (isLowQuality(resultText)) {
-      console.warn(`${model} produced low-quality response, retrying with gpt-5.6-terra`);
-      model = "gpt-5.6-terra";
-      completion = await callModel("gpt-5.6-terra");
-      const retryContent = completion.choices[0]?.message?.content;
+    const solScore = scoreCandidate(solParsed);
+    const terraScore = scoreCandidate(terraParsed);
+
+    let winner = solScore >= terraScore ? solParsed : terraParsed;
+    let model = winner?.model || "gpt-5.6-sol";
+
+    if (!winner || (solScore < 0 && terraScore < 0)) {
+      console.warn("Both Sol and Terra produced low-quality responses, retrying Sol with max effort");
+      model = "gpt-5.6-sol";
+      const retry = await callModel("gpt-5.6-sol");
+      const retryContent = retry.choices[0]?.message?.content;
       if (retryContent) {
         const retryParsed = JSON.parse(retryContent) as PredictionResult;
         return {
           result: retryParsed.result || "No prediction generated.",
           confidence: Math.min(1, Math.max(0, retryParsed.confidence ?? 0.5)),
           reasoning: retryParsed.reasoning || "No reasoning provided.",
-          tokensIn: completion.usage?.prompt_tokens,
-          tokensOut: completion.usage?.completion_tokens,
+          tokensIn: retry.usage?.prompt_tokens,
+          tokensOut: retry.usage?.completion_tokens,
           model,
         };
       }
     }
 
     return {
-      result: parsed.result || "No prediction generated.",
-      confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
-      reasoning: parsed.reasoning || "No reasoning provided.",
-      tokensIn: completion.usage?.prompt_tokens,
-      tokensOut: completion.usage?.completion_tokens,
+      result: winner!.parsed.result || "No prediction generated.",
+      confidence: Math.min(1, Math.max(0, winner!.parsed.confidence ?? 0.5)),
+      reasoning: winner!.parsed.reasoning || "No reasoning provided.",
+      tokensIn: undefined,
+      tokensOut: undefined,
       model,
     };
   } catch (error) {
