@@ -532,6 +532,7 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
 
     return openai.chat.completions.create({
       model: modelName,
+      reasoning_effort: modelName.startsWith("gpt-5.6") ? "high" : undefined,
       messages: [
         {
           role: "system",
