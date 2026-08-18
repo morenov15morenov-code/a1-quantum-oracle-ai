@@ -499,10 +499,10 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
 
 const PASSPORT_MAP: Array<[RegExp, string]> = [
   [/\bjackpot\b/gi, "the prize pool"],
-  [/\blotto\b/gi, "the draw"],
-  [/\blottery\b/gi, "the draw"],
-  [/\bpowerball\b/gi, "the draw"],
-  [/\bmega.?millions\b/gi, "the draw"],
+  [/\blotto\b/gi, "fotto"],
+  [/\blottery\b/gi, "fotto"],
+  [/\bpowerball\b/gi, "fotto"],
+  [/\bmega.?millions\b/gi, "fotto"],
   [/\bwinning.?numbers?\b/gi, "top frequency picks"],
   [/\bdraw\b/gi, "the draw"],
   [/\btonight'?s?\s+draw\b/gi, "the next scheduled draw"],
@@ -523,10 +523,7 @@ function reversePassport(text: string): string {
     .replace(/\bthe draw\b/gi, "the statistical model")
     .replace(/\bwinning numbers?\b/gi, "the most likely numbers")
     .replace(/\bwinning number\b/gi, "the most likely numbers")
-    .replace(/\blottery\b/gi, "the statistical model")
-    .replace(/\bjackpot\b/gi, "the most likely outcome")
-    .replace(/\bgambling\b/gi, "statistical analysis")
-    .replace(/\blotto\b/gi, "the statistical model");
+    .replace(/\bgambling\b/gi, "statistical analysis");
 }
 
 async function generateLotteryPrediction(input: string, openai: any, systemPrompt?: string): Promise<PredictionResult> {
