@@ -519,7 +519,7 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
   }
 
   function containsNumber(text: string): boolean {
-    return /\$[\d,]+|\d+%|\d+\.\d+|\d+,\d+/.test(text);
+    return /\$[\d,]+|\d+%|\d+\.\d+|\d+,\d+|\d+\s*[,\-]\s*\d+/.test(text);
   }
 
   async function callModel(modelName: string) {

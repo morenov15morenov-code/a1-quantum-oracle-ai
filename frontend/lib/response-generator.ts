@@ -34,7 +34,7 @@ export const ResponseGenerator = {
     const lower = result.toLowerCase();
     const hasBanned = BANNED_RESPONSE_PHRASES.some((p) => lower.includes(p));
 
-    if (hasBanned) {
+    if (hasBanned && !lower.match(/\d+\s*[,\-]\s*\d+/)) {
       result = "The oracle needs a moment to recalibrate. Please try rephrasing your question more specifically — include numbers, dates, or concrete details for a better prediction.";
       reasoning = "Response filtered: contained template phrases instead of a direct answer.";
     }
