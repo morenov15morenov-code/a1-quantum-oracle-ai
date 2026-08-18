@@ -573,6 +573,7 @@ RULES:
 Return JSON: { "result": "your full structured analysis with 7 numbers", "confidence": 0.XX, "reasoning": "statistical reasoning behind your pick" }`;
 
   const models = ["gpt-4o", "gpt-4-turbo"];
+  const errors: string[] = [];
   for (const modelName of models) {
     try {
       const result = await openai.chat.completions.create({
@@ -601,12 +602,14 @@ Return JSON: { "result": "your full structured analysis with 7 numbers", "confid
         };
       }
     } catch (e: any) {
-      console.error(`[${new Date().toISOString()}] LOTTERY_MODEL_${modelName}_FAILED | status: ${e?.status || "none"} | message: ${e?.message || e}`);
+      const detail = `status:${e?.status||'?'} code:${e?.code||'?'} msg:${(e?.message||'?').substring(0,150)}`;
+      console.error(`[${new Date().toISOString()}] MODEL_FAIL:${modelName} ${detail}`);
+      errors.push(`${modelName}: ${detail}`);
       continue;
     }
   }
 
-  throw new Error("All lottery models failed");
+  throw new Error(`All lottery models failed | ${errors.join(" || ")}`);
 }
 
 async function generateGeneralPrediction(input: string, openai: any, systemPrompt?: string): Promise<PredictionResult> {
