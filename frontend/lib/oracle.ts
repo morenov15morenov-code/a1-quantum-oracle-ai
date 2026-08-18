@@ -53,7 +53,7 @@ export async function queryOracle(oracleInput: OracleInput): Promise<{
     forecast = await ForecastEngine.run(analysis);
   } catch (e: any) {
     console.error("ForecastEngine failed:", e?.message || e);
-    return { ...FALLBACK, similarCasesUsed };
+    return { result: `ForecastEngine ERROR: ${e?.message || String(e)}`, confidence: 0, reasoning: "forecast error", model: "error", similarCasesUsed };
   }
 
   let draft;

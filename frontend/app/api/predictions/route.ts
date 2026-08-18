@@ -58,10 +58,14 @@ export async function POST(request: Request) {
       oracleResult = await queryOracle({ input, context, domainCategory, userId: session.user.id });
     } catch (e: any) {
       logFailed(input, e?.message || String(e));
-      oracleResult = null;
+      oracleResult = { result: `DEBUG ERROR: ${e?.message || String(e)}`, confidence: 0, reasoning: "error caught", model: "error", tokensIn: 0, tokensOut: 0, similarCasesUsed: 0 };
     }
 
     const prophecy = oracleResult?.result?.trim() || "The Oracle is silent on this matter.";
+    
+    if (prophecy === "The Oracle is silent on this matter.") {
+      logFailed(input, "Oracle returned empty/null result");
+    }
     const confidence = oracleResult?.confidence ?? 0;
     const reasoning = oracleResult?.reasoning?.trim() || "No reasoning available.";
     const model = oracleResult?.model || (process.env.OPENAI_API_KEY ? "gpt-4o" : "mock");
