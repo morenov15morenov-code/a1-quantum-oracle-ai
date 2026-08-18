@@ -644,6 +644,7 @@ Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`,
     const models: Array<{ name: string }> = [
       { name: "gpt-4o" },
       { name: "gpt-4-turbo" },
+      { name: "gpt-4o-mini" },
     ];
 
     const settled = await Promise.allSettled(models.map(async (m) => {
@@ -655,30 +656,20 @@ Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`,
       s.status === "fulfilled" ? s.value : (console.warn(`Model ${models[i].name} failed:`, s.reason), { model: models[i].name, content: null })
     );
 
-    const solContent = results[0]?.content;
-    const terraContent = results[1]?.content;
+    const validResults = results.filter((r) => r.content);
 
-    function parseResult(content: string): PredictionResult {
-      const parsed = JSON.parse(content) as PredictionResult;
-      return {
-        result: parsed.result || "No prediction generated.",
-        confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
-        reasoning: parsed.reasoning || "No reasoning provided.",
-      };
-    }
-
-    if (solContent && terraContent) {
+    if (validResults.length >= 2) {
       try {
         const fusion = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
             {
               role: "system",
-              content: "You are a data analyst merging two AI forecasts into ONE superior answer. Take the best data points and specific picks from both. Give the answer directly. Output JSON.",
+              content: "You are a data analyst merging multiple AI forecasts into ONE superior answer. Take the best data points and specific picks from all sources. Give the answer directly. Output JSON.",
             },
             {
               role: "user",
-              content: `Merge these two predictions into one best answer:\n\n--- PREDICTION A ---\n${solContent}\n\n--- PREDICTION B ---\n${terraContent}\n\nOutput JSON: { "result": "...", "confidence": 0.XX, "reasoning": "..." }`,
+              content: `Merge these predictions into one best answer:\n\n${validResults.map((r, i) => `--- PREDICTION ${String.fromCharCode(65 + i)} (${r.model}) ---\n${r.content}`).join("\n\n")}\n\nOutput JSON: { "result": "...", "confidence": 0.XX, "reasoning": "..." }`,
             },
           ],
           response_format: { type: "json_object" },
@@ -686,19 +677,30 @@ Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`,
 
         const fusionContent = fusion.choices[0]?.message?.content;
         if (fusionContent) {
-          const parsed = parseResult(fusionContent);
-          return { ...parsed, tokensIn: fusion.usage?.prompt_tokens, tokensOut: fusion.usage?.completion_tokens, model: "gpt-4o-fusion" };
+          const parsed = JSON.parse(fusionContent) as PredictionResult;
+          return {
+            result: parsed.result || "No prediction generated.",
+            confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
+            reasoning: parsed.reasoning || "No reasoning provided.",
+            tokensIn: fusion.usage?.prompt_tokens,
+            tokensOut: fusion.usage?.completion_tokens,
+            model: `gpt-4o-fusion(${validResults.length})`,
+          };
         }
       } catch (e: any) {
         console.warn("Fusion call failed:", e.message);
       }
     }
 
-    if (solContent) {
-      return { ...parseResult(solContent), model: "gpt-4o" };
-    }
-    if (terraContent) {
-      return { ...parseResult(terraContent), model: "gpt-4-turbo" };
+    if (validResults.length > 0) {
+      const best = validResults[0];
+      const parsed = JSON.parse(best.content!) as PredictionResult;
+      return {
+        result: parsed.result || "No prediction generated.",
+        confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
+        reasoning: parsed.reasoning || "No reasoning provided.",
+        model: best.model,
+      };
     }
 
     throw new Error("All AI models returned empty responses");
