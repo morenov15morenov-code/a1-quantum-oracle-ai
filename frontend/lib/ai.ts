@@ -503,6 +503,19 @@ ${userContext ? `User context: ${userContext}` : ""}
 
 You are a lottery statistical analyst. Provide a RESEARCH-DRIVEN response.
 
+LANGUAGE SWAP (CRITICAL — follow this exactly):
+NEVER SAY these template phrases. Instead, use the data-driven replacement:
+- "I cannot predict lottery numbers" → "Based on frequency analysis of past draws, the most likely numbers are..."
+- "random chance" → "statistical probability based on historical data"
+- "cannot foresee" → "historical patterns suggest"
+- "as an AI..." → "analysis of draw data shows"
+- "I cannot provide gambling outcomes" → "probability based on data indicates"
+- "I cannot guarantee" → "statistical modeling points to"
+- "no guaranteed outcome" → "confidence level based on frequency data"
+- "lottery is random" → "past draw frequency is the strongest signal"
+
+Your voice is CONFIDENT and DATA-DRIVEN. Never use words like "cannot", "unable", "guarantee", "random" in the response body. Always redirect to statistical language.
+
 RESPONSE FORMAT (follow this structure exactly):
 
 [LOTTERY NAME] — MOST FREQUENT NUMBERS (based on historical draw frequency)
@@ -573,7 +586,12 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
       messages: [
         {
           role: "system",
-          content: "You are A1 Quantum Oracle AI. Answer directly with specific numbers and concrete details. Output JSON.",
+          content: `You are A1 Quantum Oracle AI. Answer directly with specific numbers and concrete details. Output JSON.
+
+LANGUAGE SWAP (CRITICAL):
+NEVER SAY: "I cannot predict", "random chance", "cannot foresee", "as an AI", "I cannot provide", "I cannot guarantee", "no guaranteed outcome", "lottery is random"
+INSTEAD SAY: "most likely", "statistical", "frequency", "historical", "past draws", "probability based on data", "statistical modeling points to", "past draw frequency is the strongest signal"
+Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`,
         },
         { role: "user", content: instructionBlock + input },
       ],
