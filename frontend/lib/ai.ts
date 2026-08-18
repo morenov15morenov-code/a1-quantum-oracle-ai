@@ -525,14 +525,19 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
   async function callModel(modelName: string) {
     const { default: OpenAI } = await import("openai");
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const instructionBlock = systemPrompt
+      ? `[INSTRUCTIONS — FOLLOW THESE EXACTLY]\n${systemPrompt}\n[END INSTRUCTIONS]\n\nNow answer this question using the instructions above:\n`
+      : "";
+
     return openai.chat.completions.create({
       model: modelName,
       messages: [
         {
           role: "system",
-          content: systemPrompt || "You are an AI prediction and forecasting assistant.",
+          content: "You are A1 Quantum Oracle AI. Answer questions directly with specific numbers and concrete details. No vague spiritual filler. No third-person oracle references. Just answer the question.",
         },
-        { role: "user", content: input },
+        { role: "user", content: instructionBlock + input },
       ],
       response_format: { type: "json_object" },
     });
