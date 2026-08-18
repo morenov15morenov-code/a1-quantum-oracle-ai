@@ -66,6 +66,7 @@ export async function POST(request: Request) {
 
         const userMessage = `Question: ${input}${context ? `\n\nContext: ${context}` : ""}${domainCategory ? `\n\nDomain: ${domainCategory}` : ""}`;
 
+        model = "gpt-4o";
         const result = await client.chat.completions.create({
           model: "gpt-4o",
           max_tokens: 1500,
@@ -76,10 +77,9 @@ export async function POST(request: Request) {
         });
 
         prophecy = result.choices?.[0]?.message?.content || "The Oracle is silent.";
-        model = "gpt-4o";
       } catch (aiErr: any) {
         console.error(`[${new Date().toISOString()}] AI_FAILED | INPUT: ${input.substring(0, 200)} | ERROR: ${aiErr?.message || aiErr}`);
-        prophecy = "The Oracle encountered a disturbance in the quantum field. Please try again.";
+        prophecy = `The Oracle encountered a disturbance. (${aiErr?.status || "unknown"}: ${aiErr?.message || "no details"})`;
       }
     } else {
       prophecy = "The Oracle is in mock mode. Set OPENAI_API_KEY for real predictions.";
