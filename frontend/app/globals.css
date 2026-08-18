@@ -146,8 +146,8 @@ body {
   color: transparent;
 }
 
-.text-gradient-gold {
-  background-image: linear-gradient(120deg, hsl(38 92% 55%), hsl(262 83% 66%));
+.text-gradient-red {
+  background-image: linear-gradient(120deg, hsl(0 83% 66%), hsl(38 92% 55%));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
