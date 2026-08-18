@@ -60,7 +60,22 @@ export async function POST(request: Request) {
     }
 
     const { input, context, domainCategory } = parsed.data;
-    const oracleResult = await queryOracle({ input, context, domainCategory, userId: session.user.id });
+
+    let oracleResult;
+    try {
+      oracleResult = await queryOracle({ input, context, domainCategory, userId: session.user.id });
+    } catch (oracleErr: any) {
+      console.error("Oracle pipeline error:", oracleErr?.message || oracleErr);
+      oracleResult = {
+        result: "The Oracle is silent on this matter.",
+        confidence: 0,
+        reasoning: "The prediction pipeline encountered an error. Please try again.",
+      };
+    }
+
+    if (!oracleResult?.result || oracleResult.result.trim().length === 0) {
+      oracleResult.result = "The Oracle is silent on this matter.";
+    }
 
     const prediction = await db.insert(predictions).values({
       userId: session.user.id,
@@ -92,7 +107,10 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     console.error("Prediction error:", error?.message || error);
-    return NextResponse.json({ error: "Internal server error", detail: error?.message || "unknown" }, { status: 500 });
+    return NextResponse.json(
+      { result: "The Oracle is silent on this matter.", confidence: 0, reasoning: "An unexpected error occurred.", error: error?.message || "unknown" },
+      { status: 200 },
+    );
   }
 }
 

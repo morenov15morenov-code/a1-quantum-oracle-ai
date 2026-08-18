@@ -513,7 +513,7 @@ RULES:
 
 Return JSON: { "result": "your prediction text with 7 numbers", "confidence": 0.XX, "reasoning": "brief statistical reasoning" }`;
 
-  const models = ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-4o"];
+  const models = ["gpt-4o", "gpt-4-turbo"];
   for (const modelName of models) {
     try {
       const result = await openai.chat.completions.create({
@@ -587,10 +587,9 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
   }
 
   try {
-    const models: Array<{ name: string; reasoning?: string }> = [
-      { name: "gpt-5.6-sol", reasoning: "high" },
-      { name: "gpt-5.6-terra", reasoning: "high" },
+    const models: Array<{ name: string }> = [
       { name: "gpt-4o" },
+      { name: "gpt-4-turbo" },
     ];
 
     const results: Array<{ model: string; content: string | null }> = [];
@@ -617,42 +616,45 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
     }
 
     if (solContent && terraContent) {
-      const fusion = await openai.chat.completions.create({
-        model: "gpt-5.6-sol",
-        reasoning_effort: "high",
-        messages: [
-          {
-            role: "system",
-            content: "You are a data analyst merging two AI predictions into ONE superior answer. Take the best data points and specific numbers from both. Never use template phrases. Give the answer directly. Output JSON.",
-          },
-          {
-            role: "user",
-            content: `Merge these two predictions into one best answer:\n\n--- PREDICTION A ---\n${solContent}\n\n--- PREDICTION B ---\n${terraContent}\n\nOutput JSON: { "result": "...", "confidence": 0.XX, "reasoning": "..." }`,
-          },
-        ],
-        response_format: { type: "json_object" },
-      });
+      try {
+        const fusion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are a data analyst merging two AI predictions into ONE superior answer. Take the best data points and specific numbers from both. Never use template phrases. Give the answer directly. Output JSON.",
+            },
+            {
+              role: "user",
+              content: `Merge these two predictions into one best answer:\n\n--- PREDICTION A ---\n${solContent}\n\n--- PREDICTION B ---\n${terraContent}\n\nOutput JSON: { "result": "...", "confidence": 0.XX, "reasoning": "..." }`,
+            },
+          ],
+          response_format: { type: "json_object" },
+        });
 
-      const fusionContent = fusion.choices[0]?.message?.content;
-      if (fusionContent) {
-        const parsed = parseResult(fusionContent);
-        if (!isLowQuality(parsed.result)) {
-          return { ...parsed, tokensIn: fusion.usage?.prompt_tokens, tokensOut: fusion.usage?.completion_tokens, model: "gpt-5.6-fusion" };
+        const fusionContent = fusion.choices[0]?.message?.content;
+        if (fusionContent) {
+          const parsed = parseResult(fusionContent);
+          if (!isLowQuality(parsed.result)) {
+            return { ...parsed, tokensIn: fusion.usage?.prompt_tokens, tokensOut: fusion.usage?.completion_tokens, model: "gpt-4o-fusion" };
+          }
+          console.warn("Fusion response was low quality, falling back to single model");
         }
-        console.warn("Fusion response was low quality, falling back to single model");
+      } catch (e: any) {
+        console.warn("Fusion call failed:", e.message);
       }
     }
 
     if (solContent) {
       const parsed = parseResult(solContent);
       if (!isLowQuality(parsed.result)) {
-        return { ...parsed, model: "gpt-5.6-sol" };
+        return { ...parsed, model: "gpt-4o" };
       }
     }
     if (terraContent) {
       const parsed = parseResult(terraContent);
       if (!isLowQuality(parsed.result)) {
-        return { ...parsed, model: "gpt-5.6-terra" };
+        return { ...parsed, model: "gpt-4-turbo" };
       }
     }
 
