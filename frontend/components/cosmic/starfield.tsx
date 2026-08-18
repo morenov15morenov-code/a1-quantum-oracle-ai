@@ -32,7 +32,7 @@ export function Starfield({ count = 90 }: { count?: number }) {
       {stars.map((star, i) => (
         <span
           key={i}
-          className="absolute rounded-full bg-slate-900/40 dark:bg-white/90 animate-twinkle"
+          className="absolute rounded-full bg-white/80 animate-twinkle"
           style={{
             top: `${star.top}%`,
             left: `${star.left}%`,

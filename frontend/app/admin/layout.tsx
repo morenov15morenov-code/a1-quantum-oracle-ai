@@ -6,7 +6,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <Sidebar />
       <div className="flex flex-1 flex-col">
         <main id="main-content" className="flex-1 overflow-auto p-6 md:p-8">{children}</main>
-        <footer className="pb-6 text-center text-xs font-semibold text-black">
+        <footer className="pb-6 text-center text-xs font-semibold text-white/60">
           <p>A creation of Alexander Morenov & S/F Technologies</p>
           <p className="mt-1">29 Bringelly Ave, Pendle Hill, Sydney NSW, Australia</p>
           <p className="mt-1">aonequantumoracleai@gmail.com | +61 420 922 489</p>
