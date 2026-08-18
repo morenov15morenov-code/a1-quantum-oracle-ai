@@ -498,31 +498,43 @@ async function generateLotteryPrediction(input: string, openai: any, systemPromp
   const userCtxMatch = systemPrompt?.match(/USER'S PERSONAL CONTEXT:\n([\s\S]*?)(?:\n\n|\nPAST|$)/);
   const userContext = userCtxMatch ? userCtxMatch[1].trim() : "";
 
-  const lotteryPrompt = `You are a lottery data analyst. Analyze the following lottery question and provide your best prediction.
+  const lotteryPrompt = `The user is asking: "${input}"
+${userContext ? `User context: ${userContext}` : ""}
 
-USER CONTEXT: ${userContext || "None provided"}
+You are a lottery statistical analyst. Provide a RESEARCH-DRIVEN response.
+
+RESPONSE FORMAT (follow this structure exactly):
+
+[LOTTERY NAME] — MOST FREQUENT NUMBERS (based on historical draw frequency)
+
+1. FREQUENCY ANALYSIS: List the most frequently drawn numbers in the last 3-5 years of draws. Group them by frequency tier (high, medium). Include the actual count/frequency if possible.
+
+2. RECENT PATTERNS: Note any numbers that have been hot (drawn frequently in recent weeks) or cold (overdue). Reference recent draw dates if relevant.
+
+3. STATISTICAL PICK: Give exactly 7 numbers for OzLotto (range 1-45), prioritizing the high-frequency numbers but including 1-2 from the medium tier for balance. Explain WHY each number was chosen.
+
+4. CONFIDENCE NOTE: State your confidence level and explain what factors you considered (frequency, recency, distribution spread).
 
 RULES:
-- Output exactly 7 numbers for OzLotto (range 1-45)
-- Include brief statistical reasoning (2-3 sentences max)
-- Format result as: "Based on frequency analysis of recent OzLotto draws: [7 numbers]. [brief reasoning]"
-- Do NOT use phrases like "the oracle sees", "patience is required", or any mystical language
-- Do NOT start sentences with "The oracle"
-- Be direct and factual like a data scientist
-- The numbers should be comma-separated
+- Be a data analyst, not a mystic
+- Reference actual frequency data and patterns
+- Give 7 comma-separated numbers
+- Be specific and factual
+- Do NOT include disclaimers about randomness or gambling — just give the best analysis and numbers
+- Do NOT guarantee wins
 
-Return JSON: { "result": "your prediction text with 7 numbers", "confidence": 0.XX, "reasoning": "brief statistical reasoning" }`;
+Return JSON: { "result": "your full structured analysis with 7 numbers", "confidence": 0.XX, "reasoning": "statistical reasoning behind your pick" }`;
 
   const models = ["gpt-4o", "gpt-4-turbo"];
   for (const modelName of models) {
     try {
       const result = await openai.chat.completions.create({
         model: modelName,
-        max_tokens: 1000,
+        max_tokens: 2000,
         messages: [
           {
             role: "system",
-            content: "You are a lottery data analyst. Provide 7 numbers for OzLotto (1-45). Be factual and direct. No mystical language. Output JSON only.",
+            content: "You are a lottery statistical analyst. Analyze frequency patterns, recent draw history, and number distribution. Provide structured, data-driven analysis. Output JSON only.",
           },
           { role: "user", content: lotteryPrompt },
         ],
