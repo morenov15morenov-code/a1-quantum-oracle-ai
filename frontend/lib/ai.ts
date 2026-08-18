@@ -488,19 +488,25 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
     "the oracle considers",
     "the oracle sees",
     "the oracle reads",
+    "the oracle counsels",
+    "the oracle notes",
     "the arc of your life",
     "quietly rearranging",
-    "what you have built, where you have landed",
-    "rewards early, deliberate movement",
-    "the oracle reads the shift",
-    "this reading arrives under",
-    "a distinctive probability signature",
-    "shaped by the distance you have traveled",
-    "a stranger's reading would miss",
-    "you will need to remove an obstacle",
+    "what you have built",
+    "rewards early",
+    "deliberate movement",
+    "this reading arrives",
+    "a distinctive probability",
+    "shaped by the distance",
+    "a stranger's reading",
     "the waxing crescent",
     "during leo season",
-    "intention",
+    "intentions are still forming",
+    "the signal you have been waiting for",
+    "this alignment rewards",
+    "bend toward whatever",
+    "the currents surrounding",
+    "central theme:",
   ];
 
   function containsBannedPhrase(text: string): boolean {
@@ -582,6 +588,25 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
       const fusionContent = fusion.choices[0]?.message?.content;
       if (fusionContent) {
         const parsed = JSON.parse(fusionContent) as PredictionResult;
+        const fusionResult = parsed.result || "";
+
+        if (isLowQuality(fusionResult)) {
+          console.warn("Fusion produced low-quality response, trying single Terra call");
+          const singleResult = await callModel("gpt-5.6-terra");
+          const singleContent = singleResult.choices[0]?.message?.content;
+          if (singleContent) {
+            const singleParsed = JSON.parse(singleContent) as PredictionResult;
+            return {
+              result: singleParsed.result || "No prediction generated.",
+              confidence: Math.min(1, Math.max(0, singleParsed.confidence ?? 0.5)),
+              reasoning: singleParsed.reasoning || "No reasoning provided.",
+              tokensIn: singleResult.usage?.prompt_tokens,
+              tokensOut: singleResult.usage?.completion_tokens,
+              model: "gpt-5.6-terra",
+            };
+          }
+        }
+
         return {
           result: parsed.result || "No prediction generated.",
           confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
