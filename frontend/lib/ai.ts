@@ -513,32 +513,40 @@ RULES:
 
 Return JSON: { "result": "your prediction text with 7 numbers", "confidence": 0.XX, "reasoning": "brief statistical reasoning" }`;
 
-  const result = await openai.chat.completions.create({
-    model: "gpt-5.6-sol",
-    messages: [
-      {
-        role: "system",
-        content: "You are a lottery data analyst. Provide 7 numbers for OzLotto (1-45). Be factual and direct. No mystical language. Output JSON only.",
-      },
-      { role: "user", content: lotteryPrompt },
-    ],
-    response_format: { type: "json_object" },
-  });
+  const models = ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-4o"];
+  for (const modelName of models) {
+    try {
+      const result = await openai.chat.completions.create({
+        model: modelName,
+        messages: [
+          {
+            role: "system",
+            content: "You are a lottery data analyst. Provide 7 numbers for OzLotto (1-45). Be factual and direct. No mystical language. Output JSON only.",
+          },
+          { role: "user", content: lotteryPrompt },
+        ],
+        response_format: { type: "json_object" },
+      });
 
-  const content = result.choices[0]?.message?.content;
-  if (content) {
-    const parsed = JSON.parse(content) as PredictionResult;
-    return {
-      result: parsed.result || "No prediction generated.",
-      confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
-      reasoning: parsed.reasoning || "No reasoning provided.",
-      tokensIn: result.usage?.prompt_tokens,
-      tokensOut: result.usage?.completion_tokens,
-      model: "gpt-5.6-sol",
-    };
+      const content = result.choices[0]?.message?.content;
+      if (content) {
+        const parsed = JSON.parse(content) as PredictionResult;
+        return {
+          result: parsed.result || "No prediction generated.",
+          confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
+          reasoning: parsed.reasoning || "No reasoning provided.",
+          tokensIn: result.usage?.prompt_tokens,
+          tokensOut: result.usage?.completion_tokens,
+          model: modelName,
+        };
+      }
+    } catch (e: any) {
+      console.warn(`Lottery model ${modelName} failed:`, e.message);
+      continue;
+    }
   }
 
-  throw new Error("Lottery prediction failed");
+  throw new Error("All lottery models failed");
 }
 
 async function generateGeneralPrediction(input: string, openai: any, systemPrompt?: string): Promise<PredictionResult> {
@@ -549,7 +557,6 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
   async function callModel(modelName: string) {
     return openai.chat.completions.create({
       model: modelName,
-      reasoning_effort: modelName.startsWith("gpt-5.6") ? "high" : undefined,
       messages: [
         {
           role: "system",
@@ -579,19 +586,26 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
     return BANNED_PHRASES.some((p) => lower.includes(p)) || lower.startsWith("the oracle") || lower.startsWith("on the matter");
   }
 
-  function extractContent(settled: PromiseSettledResult<Awaited<ReturnType<typeof callModel>>>): string | null {
-    if (settled.status === "fulfilled") return settled.value.choices[0]?.message?.content || null;
-    return null;
-  }
-
   try {
-    const [solResult, terraResult] = await Promise.allSettled([
-      callModel("gpt-5.6-sol"),
-      callModel("gpt-5.6-terra"),
-    ]);
+    const models: Array<{ name: string; reasoning?: string }> = [
+      { name: "gpt-5.6-sol", reasoning: "high" },
+      { name: "gpt-5.6-terra", reasoning: "high" },
+      { name: "gpt-4o" },
+    ];
 
-    const solContent = extractContent(solResult);
-    const terraContent = extractContent(terraResult);
+    const results: Array<{ model: string; content: string | null }> = [];
+    for (const m of models) {
+      try {
+        const r = await callModel(m.name);
+        results.push({ model: m.name, content: r.choices[0]?.message?.content || null });
+      } catch (e: any) {
+        console.warn(`Model ${m.name} failed:`, e.message);
+        results.push({ model: m.name, content: null });
+      }
+    }
+
+    const solContent = results[0]?.content;
+    const terraContent = results[1]?.content;
 
     function parseResult(content: string): PredictionResult {
       const parsed = JSON.parse(content) as PredictionResult;
