@@ -49,7 +49,7 @@ export function PredictionForm({ onPredictionCreated }: PredictionFormProps) {
 
       if (!res.ok) {
         const err = await res.json();
-        setError(err.error ?? "Failed to generate prediction");
+        setError(err.error ?? err.prophecy ?? "Failed to generate prediction");
         return;
       }
 
