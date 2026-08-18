@@ -478,9 +478,12 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
   const useMock = !process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "sk-your-openai-api-key";
 
   if (useMock) {
+    console.log(`[${new Date().toISOString()}] MOCK_MODE | key_set: ${!!process.env.OPENAI_API_KEY}`);
     await new Promise((r) => setTimeout(r, 1200));
     return generateMockPrediction(input, systemPrompt);
   }
+
+  console.log(`[${new Date().toISOString()}] LIVE_MODE | key_prefix: ${process.env.OPENAI_API_KEY?.substring(0, 8)}...`);
 
   const { default: OpenAI } = await import("openai");
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -567,7 +570,7 @@ Return JSON: { "result": "your full structured analysis with 7 numbers", "confid
         };
       }
     } catch (e: any) {
-      console.warn(`Lottery model ${modelName} failed:`, e.message);
+      console.error(`[${new Date().toISOString()}] LOTTERY_MODEL_${modelName}_FAILED | status: ${e?.status || "none"} | message: ${e?.message || e}`);
       continue;
     }
   }
