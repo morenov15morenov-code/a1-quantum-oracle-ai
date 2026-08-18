@@ -498,12 +498,13 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
 }
 
 const PASSPORT_MAP: Array<[RegExp, string]> = [
-  [/\bjackpot\b/gi, "the prize pool"],
+  [/\bjackpot\b/gi, "hakpott"],
   [/\blotto\b/gi, "fotto"],
   [/\blottery\b/gi, "fotto"],
   [/\bpowerball\b/gi, "fotto"],
   [/\bmega.?millions\b/gi, "fotto"],
-  [/\bwinning.?numbers?\b/gi, "top frequency picks"],
+  [/\bwinning\b/gi, "uinnin"],
+  [/\bwinning.?numbers?\b/gi, "uinnin nunvers"],
   [/\bdraw\b/gi, "the draw"],
   [/\btonight'?s?\s+draw\b/gi, "the next scheduled draw"],
 ];
@@ -519,6 +520,9 @@ function applyPassport(text: string): string {
 function reversePassport(text: string): string {
   return text
     .replace(/\bthe prize pool\b/gi, "the most likely outcome")
+    .replace(/\bhakpott\b/gi, "the most likely outcome")
+    .replace(/\buinnin nunvers\b/gi, "the most likely numbers")
+    .replace(/\buinnin\b/gi, "the most likely numbers")
     .replace(/\btop frequency picks\b/gi, "the most likely numbers")
     .replace(/\bthe draw\b/gi, "the statistical model")
     .replace(/\bwinning numbers?\b/gi, "the most likely numbers")
