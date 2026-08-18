@@ -2,31 +2,23 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { predictions, subscriptions, analyticsEvents } from "@/lib/schema";
-import { queryOracle } from "@/lib/oracle";
 import { oracleQuerySchema } from "@/lib/validations";
-import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 import { refreshSubscription, nextFreeRefill, isAdminUser } from "@/lib/subscription";
-import { parsePagination, paginationError } from "@/lib/pagination";
 import { eq, sql } from "drizzle-orm";
 
 export const maxDuration = 60;
 
-function logFailed(input: string, error: string) {
-  console.error(`[${new Date().toISOString()}] FAILED | INPUT: ${input.substring(0, 200)} | ERROR: ${error}`);
-}
-
 export async function POST(request: Request) {
-  let input = "";
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ prophecy: "Unauthorized." }, { status: 401 });
     }
 
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
     const isAdmin = isAdminUser(session);
-
     if (!isAdmin) {
+      const ip = request.headers.get("x-forwarded-for") ?? "unknown";
       const rl = await rateLimit(`predict:${session.user.id}:${ip}`, 10, 60000);
       if (!rl.success) {
         return NextResponse.json({ prophecy: "Too many requests. Wait a moment." }, { status: 429 });
@@ -34,7 +26,6 @@ export async function POST(request: Request) {
     }
 
     const subscription = await refreshSubscription(session.user.id);
-
     if (!isAdmin && (subscription.tier === "FREE" || subscription.status === "PENDING") && subscription.predsUsed >= subscription.predsLimit) {
       const nextRefill = nextFreeRefill(subscription.periodStart);
       const remainingMs = Math.max(0, nextRefill.getTime() - Date.now());
@@ -53,23 +44,47 @@ export async function POST(request: Request) {
       return NextResponse.json({ prophecy: "Invalid input." }, { status: 400 });
     }
 
-    input = parsed.data.input;
-    const { context, domainCategory } = parsed.data;
+    const { input, context, domainCategory } = parsed.data;
 
-    let oracleResult;
-    try {
-      oracleResult = await queryOracle({ input, context, domainCategory, userId: session.user.id });
-    } catch (e: any) {
-      logFailed(input, e?.message || String(e));
-      oracleResult = null;
+    if (!input || input.trim().length < 10) {
+      return NextResponse.json({ prophecy: "Question must be at least 10 characters." }, { status: 400 });
     }
 
-    const prophecy = oracleResult?.result?.trim() || "The Oracle is silent on this matter.";
-    const confidence = oracleResult?.confidence ?? 0;
-    const reasoning = oracleResult?.reasoning?.trim() || "No reasoning available.";
-    const model = oracleResult?.model || (process.env.OPENAI_API_KEY ? "gpt-4o" : "mock");
+    let prophecy = "The Oracle is silent.";
+    let model = "mock";
 
-    let predictionId = "unknown";
+    if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "sk-your-openai-api-key") {
+      try {
+        const { default: OpenAI } = await import("openai");
+        const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+        const isLottery = /lotto|lottery|ozlotto|powerball|mega.?millions|jackpot|winning.?numbers?|draw/i.test(input);
+
+        const systemMessage = isLottery
+          ? "You are a lottery data analyst. Analyze the question and give your best prediction with specific numbers. Be factual and direct. No mystical language."
+          : "You are A1 Quantum Oracle AI — a data-driven prediction engine. Answer directly with specific numbers, dates, and concrete details. No vague spiritual filler. No third-person oracle references. Just answer the question.";
+
+        const userMessage = `Question: ${input}${context ? `\n\nContext: ${context}` : ""}${domainCategory ? `\n\nDomain: ${domainCategory}` : ""}`;
+
+        const result = await client.chat.completions.create({
+          model: "gpt-4o",
+          max_tokens: 1500,
+          messages: [
+            { role: "system", content: systemMessage },
+            { role: "user", content: userMessage },
+          ],
+        });
+
+        prophecy = result.choices?.[0]?.message?.content || "The Oracle is silent.";
+        model = "gpt-4o";
+      } catch (aiErr: any) {
+        console.error(`[${new Date().toISOString()}] AI_FAILED | INPUT: ${input.substring(0, 200)} | ERROR: ${aiErr?.message || aiErr}`);
+        prophecy = "The Oracle encountered a disturbance in the quantum field. Please try again.";
+      }
+    } else {
+      prophecy = "The Oracle is in mock mode. Set OPENAI_API_KEY for real predictions.";
+    }
+
     try {
       const prediction = await db.insert(predictions).values({
         userId: session.user.id,
@@ -77,13 +92,10 @@ export async function POST(request: Request) {
         context: context || null,
         domainCategory: domainCategory || null,
         result: prophecy,
-        confidence,
-        reasoning,
+        confidence: 0.5,
+        reasoning: "Direct GPT response.",
         model,
-        tokensIn: oracleResult?.tokensIn ?? null,
-        tokensOut: oracleResult?.tokensOut ?? null,
       }).returning().get();
-      predictionId = prediction.id;
 
       await db.update(subscriptions)
         .set({ predsUsed: sql`${subscriptions.predsUsed} + 1` })
@@ -95,19 +107,14 @@ export async function POST(request: Request) {
         userId: session.user.id,
         metadata: JSON.stringify({ predictionId: prediction.id }),
       }).run();
-    } catch (dbErr: any) {
-      logFailed(input, `DB_ERROR: ${dbErr?.message || dbErr}`);
-    }
 
-    return NextResponse.json({
-      prophecy,
-      confidence,
-      reasoning,
-      model,
-      id: predictionId,
-    });
+      return NextResponse.json({ prophecy, id: prediction.id });
+    } catch (dbErr: any) {
+      console.error(`[${new Date().toISOString()}] DB_FAILED | ERROR: ${dbErr?.message || dbErr}`);
+      return NextResponse.json({ prophecy });
+    }
   } catch (error: any) {
-    logFailed(input || "unknown", error?.message || String(error));
+    console.error(`[${new Date().toISOString()}] FATAL | ERROR: ${error?.message || error}`);
     return NextResponse.json({
       prophecy: "The Oracle encountered a disturbance in the quantum field.",
     });
@@ -118,16 +125,13 @@ export async function GET(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ prophecy: "Unauthorized." }, { status: 401 });
+      return NextResponse.json({ predictions: [], total: 0 });
     }
 
     const { searchParams } = new URL(request.url);
-    const pagination = parsePagination(searchParams);
-    if (!pagination) {
-      return NextResponse.json(paginationError(), { status: 400 });
-    }
-
-    const { page, limit, skip } = pagination;
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const skip = (page - 1) * limit;
 
     const preds = await db.select().from(predictions)
       .where(eq(predictions.userId, session.user.id))
@@ -143,7 +147,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ predictions: preds, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error: any) {
-    console.error("Predictions GET error:", error?.message || error);
+    console.error(`[${new Date().toISOString()}] GET_FAILED | ERROR: ${error?.message || error}`);
     return NextResponse.json({ predictions: [], total: 0, page: 1, totalPages: 0 });
   }
 }
