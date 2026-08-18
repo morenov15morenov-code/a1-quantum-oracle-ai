@@ -15,6 +15,11 @@ export interface OracleContext {
   }>;
   userContext: string;
   domain: string;
+  wisdom?: Array<{
+    lesson: string;
+    domain: string;
+    accuracy: string;
+  }>;
   businessMetrics?: {
     totalUsers: number;
     freeUsers: number;
@@ -97,7 +102,17 @@ When someone asks about lottery numbers, winning numbers, or gambling odds:
       if (c.outcomeStatus) prompt += `\n  Outcome: ${c.outcomeStatus}`;
       if (c.wasAccurate !== null) prompt += `\n  Verified: ${c.wasAccurate ? "Accurate" : "Not accurate"}`;
     });
-    prompt += `\n\nAdjust for the current question's context. Do NOT repeat past answers.`;
+     prompt += `\n\nAdjust for the current question's context. Do NOT repeat past answers.`;
+  }
+
+  if (oracleContext.wisdom && oracleContext.wisdom.length > 0) {
+    prompt += `\n\nACCUMULATED WISDOM (lessons learned from past predictions):`;
+    oracleContext.wisdom.forEach((w, i) => {
+      prompt += `\n\nLesson ${i + 1}: "${w.lesson}"`;
+      prompt += `\n  Domain: ${w.domain}`;
+      prompt += `\n  Accuracy: ${w.accuracy}`;
+    });
+    prompt += `\n\nApply these lessons to improve your current prediction. If a similar pattern worked before, use it. If it failed, avoid it.`;
   }
 
   if (oracleContext.businessMetrics) {
@@ -230,6 +245,44 @@ export const AnalyticsEngine = {
 
     const businessMetrics = await gatherBusinessMetrics();
 
+    const wisdom: Array<{ lesson: string; domain: string; accuracy: string }> = [];
+    const verifiedCases = typedPast.filter((p) => p.feedbackWasAccurate !== null);
+    const accurateCases = verifiedCases.filter((p) => p.feedbackWasAccurate === true);
+    const inaccurateCases = verifiedCases.filter((p) => p.feedbackWasAccurate === false);
+
+    if (accurateCases.length > 0) {
+      const topAccurate = accurateCases.slice(0, 5);
+      topAccurate.forEach((c) => {
+        wisdom.push({
+          lesson: `For "${c.input.substring(0, 60)}..." my answer was verified accurate: ${c.result.substring(0, 100)}...`,
+          domain: c.domainCategory || "General",
+          accuracy: `Accurate (rated ${c.feedbackRating || "unrated"}/5)`,
+        });
+      });
+    }
+
+    if (inaccurateCases.length > 0) {
+      const topInaccurate = inaccurateCases.slice(0, 3);
+      topInaccurate.forEach((c) => {
+        wisdom.push({
+          lesson: `For "${c.input.substring(0, 60)}..." my answer was verified INACCURATE: ${c.result.substring(0, 100)}... — I should adjust my approach for similar questions.`,
+          domain: c.domainCategory || "General",
+          accuracy: `Inaccurate (rated ${c.feedbackRating || "unrated"}/5) — AVOID this pattern`,
+        });
+      });
+    }
+
+    const highRatedCases = verifiedCases.filter((c) => (c.feedbackRating ?? 0) >= 4);
+    if (highRatedCases.length > 0) {
+      highRatedCases.slice(0, 3).forEach((c) => {
+        wisdom.push({
+          lesson: `High-rated prediction for "${c.input.substring(0, 60)}..." — users found this approach valuable: ${c.result.substring(0, 100)}...`,
+          domain: c.domainCategory || "General",
+          accuracy: `Highly rated (${c.feedbackRating}/5) — REPEAT this approach`,
+        });
+      });
+    }
+
     const oracleContext: OracleContext = {
       similarPastCases: similar.map((s) => ({
         input: s.prediction.input,
@@ -241,6 +294,7 @@ export const AnalyticsEngine = {
       })),
       userContext,
       domain,
+      wisdom,
       businessMetrics,
     };
 
