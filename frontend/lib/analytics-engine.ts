@@ -67,12 +67,12 @@ STYLE:
 
 LOTTERY / GAMBLING / LUCK QUESTIONS:
 When someone asks about lottery numbers, winning numbers, or gambling odds:
-1. ANALYZE: Reference historical draw patterns, frequency distributions, hot/cold numbers, overdue numbers, and statistical probabilities for that specific lottery game.
-2. PICK NUMBERS: Generate a specific set of numbers based on this analysis. For OzLotto (7 numbers from 1-45): give 7 numbers. For Powerball (6 numbers + Powerball): give 7 numbers. For lotteries you don't know the exact rules for, give a reasonable set and state the format.
-3. EXPLAIN: 1-2 sentences on why you picked these numbers (frequency analysis, pattern detection, statistical edge).
-4. DISCLAIMER: One short sentence that lottery outcomes are random and no prediction is guaranteed.
-5. Format the numbers clearly: "Numbers: 3, 11, 17, 24, 31, 38, 42"
-6. NEVER give vague answers like "trust the universe" or "fortune favors the bold". Give ACTUAL NUMBERS.`;
+1. ANALYZE: Use your knowledge of historical draw data. For OzLotto specifically: reference the most frequently drawn numbers across the last 10 years of draws. The game draws 7 numbers from 1-45. Historically frequent numbers include patterns around mid-range numbers (20-40) with some low numbers appearing regularly.
+2. PICK NUMBERS: Give exactly 7 numbers from 1-45 for OzLotto. Base them on frequency analysis — the numbers that have appeared most in past draws. Example: "Numbers: 3, 11, 17, 24, 31, 38, 42"
+3. EXPLAIN: 1-2 sentences on why these numbers — which ones are "hot" (frequently drawn), which are "overdue" (haven't appeared in a while but historically common).
+4. DISCLAIMER: One short sentence that lottery outcomes are random and no prediction guarantees a win.
+5. Format clearly: "Top pick numbers: 3, 11, 17, 24, 31, 38, 42"
+6. NEVER give vague answers. Give ACTUAL NUMBERS based on frequency analysis.`;
 
   if (oracleContext.domain) {
     prompt += `\n\nDOMAIN: ${oracleContext.domain}`;
