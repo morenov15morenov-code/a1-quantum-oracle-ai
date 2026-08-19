@@ -41,7 +41,13 @@ export async function POST(request: Request) {
         prophecy: subscription.status === "PENDING"
           ? "PRO upgrade is pending approval."
           : `Free limit reached. Next free question in ${days}d ${hours}h. Upgrade to Pro for unlimited.`,
-      });
+      }, { status: 403 });
+    }
+
+    if (process.env.EMAIL_VERIFICATION_REQUIRED === "true" && !isAdmin) {
+      if (!(session.user as any).emailVerified) {
+        return NextResponse.json({ error: "Please verify your email to create predictions." }, { status: 403 });
+      }
     }
 
     const body = await request.json();
@@ -58,7 +64,7 @@ export async function POST(request: Request) {
       oracleResult = await queryOracle({ input, context, domainCategory, userId: session.user.id });
     } catch (e: any) {
       logFailed(input, e?.message || String(e));
-      oracleResult = { result: `DEBUG ERROR: ${e?.message || String(e)}`, confidence: 0, reasoning: "error caught", model: "error", tokensIn: 0, tokensOut: 0, similarCasesUsed: 0 };
+      return NextResponse.json({ prophecy: "The Oracle encountered a disturbance in the quantum field." }, { status: 500 });
     }
 
     const prophecy = oracleResult?.result?.trim() || "The Oracle is silent on this matter.";
@@ -106,12 +112,12 @@ export async function POST(request: Request) {
       reasoning,
       model,
       id: predictionId,
-    });
+    }, { status: 201 });
   } catch (error: any) {
     logFailed(input || "unknown", error?.message || String(error));
     return NextResponse.json({
       prophecy: "The Oracle encountered a disturbance in the quantum field.",
-    });
+    }, { status: 500 });
   }
 }
 
@@ -119,7 +125,7 @@ export async function GET(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ predictions: [], total: 0 });
+      return NextResponse.json({ predictions: [], total: 0 }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);

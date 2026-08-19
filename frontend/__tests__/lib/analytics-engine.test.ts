@@ -38,8 +38,8 @@ describe("AnalyticsEngine", () => {
     expect(result.userContext).toBe("5 years as an engineer");
     expect(result.similarCasesUsed).toBe(0);
     expect(result.input).toBe("Should I switch careers?");
-    expect(result.systemPrompt).toContain("PRIMARY DOMAIN: Career & Work");
-    expect(result.systemPrompt).toContain("USER'S PERSONAL CONTEXT:");
+    expect(result.systemPrompt).toContain("DOMAIN: Career & Work");
+    expect(result.systemPrompt).toContain("USER CONTEXT:");
   });
 
   it("defaults the domain to General when none provided", async () => {
@@ -79,8 +79,8 @@ describe("AnalyticsEngine", () => {
     const result = await AnalyticsEngine.run("Should I change jobs?", "laid off", "Career & Work", "user-1");
 
     expect(result.similarCasesUsed).toBe(1);
-    expect(result.systemPrompt).toContain("PAST SIMILAR CASES TO LEARN FROM:");
+    expect(result.systemPrompt).toContain("PAST SIMILAR PREDICTIONS (reference, don't copy):");
     expect(result.systemPrompt).toContain("A pivot is favorable.");
-    expect(result.systemPrompt).toContain("Previous Confidence: 80%");
+    expect(result.systemPrompt).toContain("Confidence: 80%");
   });
 });
