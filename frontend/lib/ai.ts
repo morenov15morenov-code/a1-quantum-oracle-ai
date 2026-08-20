@@ -618,14 +618,21 @@ Return JSON: { "result": "your full structured analysis with 7 picks", "confiden
 }
 
 async function generateGeneralPrediction(input: string, openai: any, systemPrompt?: string): Promise<PredictionResult> {
+  const MAX_SYSTEM_PROMPT_CHARS = 10000;
+  const trimmedPrompt = systemPrompt && systemPrompt.length > MAX_SYSTEM_PROMPT_CHARS
+    ? systemPrompt.substring(0, MAX_SYSTEM_PROMPT_CHARS) + "\n\n[Context truncated for brevity]"
+    : systemPrompt;
+
   async function callModel(modelName: string) {
-    return openai.chat.completions.create({
+    console.log(`[${new Date().toISOString()}] CALLING_MODEL:${modelName} | prompt_chars:${trimmedPrompt?.length || 0}`);
+    const response = await openai.chat.completions.create({
       model: modelName,
       temperature: 0.9,
+      max_tokens: 2000,
       messages: [
         {
           role: "system",
-          content: systemPrompt || `You are A1 Quantum Oracle AI. Answer directly with specific picks and concrete details. Output JSON.
+          content: trimmedPrompt || `You are A1 Quantum Oracle AI. Answer directly with specific picks and concrete details. Output JSON.
 
 LANGUAGE SWAP (CRITICAL):
 NEVER SAY: "I cannot predict", "random chance", "cannot foresee", "as an AI", "I cannot provide", "I cannot guarantee", "no guaranteed outcome", "lottery is random"
@@ -636,7 +643,11 @@ Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`,
       ],
       response_format: { type: "json_object" },
     });
+    console.log(`[${new Date().toISOString()}] MODEL_OK:${modelName} | tokens_in:${response.usage?.prompt_tokens} tokens_out:${response.usage?.completion_tokens}`);
+    return response;
   }
+
+  const errors: string[] = [];
 
   try {
     const models: Array<{ name: string }> = [
@@ -645,65 +656,33 @@ Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`,
       { name: "gpt-4o-mini" },
     ];
 
-    const settled = await Promise.allSettled(models.map(async (m) => {
-      const r = await callModel(m.name);
-      return { model: m.name, content: r.choices[0]?.message?.content || null };
-    }));
-
-    const results: Array<{ model: string; content: string | null }> = settled.map((s, i) =>
-      s.status === "fulfilled" ? s.value : (console.warn(`Model ${models[i].name} failed:`, s.reason), { model: models[i].name, content: null })
-    );
-
-    const validResults = results.filter((r) => r.content);
-
-    if (validResults.length >= 2) {
+    for (const m of models) {
       try {
-        const fusion = await openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "system",
-              content: "You are a data analyst merging multiple AI forecasts into ONE superior answer. Take the best data points and specific picks from all sources. Give the answer directly. Output JSON.",
-            },
-            {
-              role: "user",
-              content: `Merge these predictions into one best answer:\n\n${validResults.map((r, i) => `--- PREDICTION ${String.fromCharCode(65 + i)} (${r.model}) ---\n${r.content}`).join("\n\n")}\n\nOutput JSON: { "result": "...", "confidence": 0.XX, "reasoning": "..." }`,
-            },
-          ],
-          response_format: { type: "json_object" },
-        });
-
-        const fusionContent = fusion.choices[0]?.message?.content;
-        if (fusionContent) {
-          const parsed = JSON.parse(fusionContent) as PredictionResult;
-          return {
-            result: parsed.result || "No prediction generated.",
-            confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
-            reasoning: parsed.reasoning || "No reasoning provided.",
-            tokensIn: fusion.usage?.prompt_tokens,
-            tokensOut: fusion.usage?.completion_tokens,
-            model: `gpt-4o-fusion(${validResults.length})`,
-          };
+        const r = await callModel(m.name);
+        const content = r.choices[0]?.message?.content;
+        if (content) {
+          const parsed = JSON.parse(content) as PredictionResult;
+          if (parsed.result) {
+            return {
+              result: parsed.result,
+              confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
+              reasoning: parsed.reasoning || "No reasoning provided.",
+              tokensIn: r.usage?.prompt_tokens,
+              tokensOut: r.usage?.completion_tokens,
+              model: m.name,
+            };
+          }
         }
       } catch (e: any) {
-        console.warn("Fusion call failed:", e.message);
+        const detail = `status:${e?.status || "?"} code:${e?.code || "?"} msg:${(e?.message || "?").substring(0, 200)}`;
+        console.error(`[${new Date().toISOString()}] MODEL_FAIL:${m.name} ${detail}`);
+        errors.push(`${m.name}: ${detail}`);
       }
     }
 
-    if (validResults.length > 0) {
-      const best = validResults[0];
-      const parsed = JSON.parse(best.content!) as PredictionResult;
-      return {
-        result: parsed.result || "No prediction generated.",
-        confidence: Math.min(1, Math.max(0, parsed.confidence ?? 0.5)),
-        reasoning: parsed.reasoning || "No reasoning provided.",
-        model: best.model,
-      };
-    }
-
-    throw new Error("All AI models returned empty responses");
+    throw new Error(`All models failed | ${errors.join(" || ")}`);
   } catch (error) {
-    console.error("AI prediction error:", error);
+    console.error(`[${new Date().toISOString()}] AI_PREDICTION_FALLBACK | input_len:${input.length} | prompt_len:${trimmedPrompt?.length || 0} | errors: ${errors.join(" | ")}`);
     const mock = generateMockPrediction(input, systemPrompt);
     return { ...mock, model: "mock-fallback" };
   }
