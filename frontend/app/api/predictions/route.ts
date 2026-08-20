@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     }
     const confidence = oracleResult?.confidence ?? 0;
     const reasoning = oracleResult?.reasoning?.trim() || "No reasoning available.";
-    const model = oracleResult?.model || (process.env.OPENAI_API_KEY ? "gpt-4o" : "mock");
+    const model = oracleResult?.model || "unknown";
 
     let predictionId = "unknown";
     try {

@@ -480,7 +480,8 @@ export async function generatePrediction(input: string, systemPrompt?: string): 
   if (useMock) {
     console.log(`[${new Date().toISOString()}] MOCK_MODE | key_set: ${!!process.env.OPENAI_API_KEY}`);
     await new Promise((r) => setTimeout(r, 1200));
-    return generateMockPrediction(input, systemPrompt);
+    const mock = generateMockPrediction(input, systemPrompt);
+    return { ...mock, model: "mock" };
   }
 
   console.log(`[${new Date().toISOString()}] LIVE_MODE | key_prefix: ${process.env.OPENAI_API_KEY?.substring(0, 8)}...`);
@@ -617,24 +618,21 @@ Return JSON: { "result": "your full structured analysis with 7 picks", "confiden
 }
 
 async function generateGeneralPrediction(input: string, openai: any, systemPrompt?: string): Promise<PredictionResult> {
-  const instructionBlock = systemPrompt
-    ? `[INSTRUCTIONS — FOLLOW THESE EXACTLY]\n${systemPrompt}\n[END INSTRUCTIONS]\n\nNow answer this question using the instructions above:\n`
-    : "";
-
   async function callModel(modelName: string) {
     return openai.chat.completions.create({
       model: modelName,
+      temperature: 0.9,
       messages: [
         {
           role: "system",
-          content: `You are A1 Quantum Oracle AI. Answer directly with specific picks and concrete details. Output JSON.
+          content: systemPrompt || `You are A1 Quantum Oracle AI. Answer directly with specific picks and concrete details. Output JSON.
 
 LANGUAGE SWAP (CRITICAL):
 NEVER SAY: "I cannot predict", "random chance", "cannot foresee", "as an AI", "I cannot provide", "I cannot guarantee", "no guaranteed outcome", "lottery is random"
 INSTEAD SAY: "most likely", "statistical", "frequency", "historical", "past draws", "probability based on data", "statistical modeling points to", "past draw frequency is the strongest signal"
 Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`,
         },
-        { role: "user", content: instructionBlock + input },
+        { role: "user", content: input },
       ],
       response_format: { type: "json_object" },
     });
@@ -706,6 +704,7 @@ Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`,
     throw new Error("All AI models returned empty responses");
   } catch (error) {
     console.error("AI prediction error:", error);
-    return generateMockPrediction(input, systemPrompt);
+    const mock = generateMockPrediction(input, systemPrompt);
+    return { ...mock, model: "mock-fallback" };
   }
 }
