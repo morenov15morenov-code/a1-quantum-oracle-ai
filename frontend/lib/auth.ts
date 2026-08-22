@@ -11,7 +11,7 @@ import type { Provider } from "next-auth/providers";
 import type { Adapter } from "@auth/core/adapters";
 import { eq } from "drizzle-orm";
 
-const MAX_FAILED_ATTEMPTS = 5;
+const MAX_FAILED_ATTEMPTS = 3;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 
 const providers: Provider[] = [

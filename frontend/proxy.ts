@@ -33,6 +33,26 @@ function checkRateLimit(key: string, limit: number): { success: boolean; count: 
   return { success: true, count: entry.count };
 }
 
+const SECURITY_HEADERS: Record<string, string> = {
+  "X-Frame-Options": "DENY",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+};
+
+function withSecurityHeaders(res: { headers: Headers }): { headers: Headers } {
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+    res.headers.set(k, v);
+  }
+  return res;
+}
+
+export async function proxy(request: NextRequest) {
+  const res = await proxyRules(request);
+  return withSecurityHeaders(res);
+}
+
 const API_RATE_LIMITS: Record<string, number> = {
   "predictions:POST": 10,
   "predictions:GET": 30,
@@ -47,7 +67,7 @@ const API_RATE_LIMITS: Record<string, number> = {
   default: 30,
 };
 
-export async function proxy(request: NextRequest) {
+async function proxyRules(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/signup");
@@ -56,6 +76,8 @@ export async function proxy(request: NextRequest) {
   const isAdminApiRoute = pathname.startsWith("/api/admin");
   const isPublic =
     pathname === "/" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
     pathname.startsWith("/api/health") ||
     pathname.startsWith("/shared") ||
     pathname === "/request-reset" ||
