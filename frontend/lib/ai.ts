@@ -625,6 +625,12 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
 
   async function callModel(modelName: string) {
     console.log(`[${new Date().toISOString()}] CALLING_MODEL:${modelName} | prompt_chars:${trimmedPrompt?.length || 0}`);
+    const basePrompt = trimmedPrompt || `You are A1 Quantum Oracle AI. Answer directly with specific picks and concrete details.
+
+LANGUAGE SWAP (CRITICAL):
+NEVER SAY: "I cannot predict", "random chance", "cannot foresee", "as an AI", "I cannot provide", "I cannot guarantee", "no guaranteed outcome", "lottery is random"
+INSTEAD SAY: "most likely", "statistical", "frequency", "historical", "past draws", "probability based on data", "statistical modeling points to", "past draw frequency is the strongest signal"
+Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`;
     const response = await openai.chat.completions.create({
       model: modelName,
       temperature: 0.9,
@@ -632,12 +638,10 @@ async function generateGeneralPrediction(input: string, openai: any, systemPromp
       messages: [
         {
           role: "system",
-          content: trimmedPrompt || `You are A1 Quantum Oracle AI. Answer directly with specific picks and concrete details. Output JSON.
+          content: `${basePrompt}
 
-LANGUAGE SWAP (CRITICAL):
-NEVER SAY: "I cannot predict", "random chance", "cannot foresee", "as an AI", "I cannot provide", "I cannot guarantee", "no guaranteed outcome", "lottery is random"
-INSTEAD SAY: "most likely", "statistical", "frequency", "historical", "past draws", "probability based on data", "statistical modeling points to", "past draw frequency is the strongest signal"
-Your voice is CONFIDENT and DATA-DRIVEN. Always use statistical language.`,
+OUTPUT FORMAT (required): Your entire reply MUST be valid JSON and nothing else, exactly this shape:
+{"result": "<your full prophecy>", "confidence": <number between 0 and 1>, "reasoning": "<brief reasoning>"}`,
         },
         { role: "user", content: input },
       ],
