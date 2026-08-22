@@ -8,13 +8,18 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
 
 const sidebarItems = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: "chart" },
-  { href: "/admin/projection", label: "Projection", icon: "projection" },
-  { href: "/admin/users", label: "Users", icon: "users" },
-  { href: "/admin/subscriptions", label: "Subscriptions", icon: "subscriptions" },
-  { href: "/admin/predictions", label: "Predictions", icon: "predictions" },
-  { href: "/admin/settings", label: "Settings", icon: "settings" },
+  { key: "dashboard", label: "Dashboard", icon: "chart" },
+  { key: "projection", label: "Projection", icon: "projection" },
+  { key: "users", label: "Users", icon: "users" },
+  { key: "subscriptions", label: "Subscriptions", icon: "subscriptions" },
+  { key: "predictions", label: "Predictions", icon: "predictions" },
+  { key: "settings", label: "Settings", icon: "settings" },
 ];
+
+function adminBase(pathname: string | null): string {
+  const first = pathname?.split("/").filter(Boolean)[0];
+  return first ? `/${first}` : "/admin";
+}
 
 function SidebarIcon({ icon }: { icon: string }) {
   switch (icon) {
@@ -75,32 +80,37 @@ export function Sidebar() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [mobileOpen, closeMobile]);
 
+  const base = adminBase(pathname);
+
   const sidebarContent = (
     <>
       <div className="flex h-14 items-center border-b px-6">
-        <Link href="/admin/dashboard" className="font-semibold">
+        <Link href={`${base}/dashboard`} className="font-semibold">
           Admin Panel
         </Link>
       </div>
 
       <nav className="flex-1 space-y-1 p-4" aria-label="Admin navigation">
-        {sidebarItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={pathname === item.href ? "page" : undefined}
-            onClick={() => setMobileOpen(false)}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-              pathname === item.href
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <SidebarIcon icon={item.icon} />
-            {item.label}
-          </Link>
-        ))}
+        {sidebarItems.map((item) => {
+          const href = `${base}/${item.key}`;
+          return (
+            <Link
+              key={item.key}
+              href={href}
+              aria-current={pathname === href ? "page" : undefined}
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                pathname === href
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <SidebarIcon icon={item.icon} />
+              {item.label}
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="border-t p-4">

@@ -53,6 +53,14 @@ export async function proxy(request: NextRequest) {
   return withSecurityHeaders(res);
 }
 
+const ADMIN_SECRET_PATH = process.env.ADMIN_SECRET_PATH || "";
+const SECRET_ACTIVE = ADMIN_SECRET_PATH.length > 0 && ADMIN_SECRET_PATH !== "admin";
+const SECRET_PREFIX = `/${ADMIN_SECRET_PATH}`;
+
+function notFound() {
+  return new NextResponse("Not Found", { status: 404 });
+}
+
 const API_RATE_LIMITS: Record<string, number> = {
   "predictions:POST": 10,
   "predictions:GET": 30,
@@ -139,6 +147,26 @@ async function proxyRules(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (SECRET_ACTIVE && !isApiRoute) {
+    const role = (session?.user as { role?: string } | undefined)?.role;
+    const isAdmin = role === "ADMIN";
+    const underLegacyDoor = pathname === "/admin" || pathname.startsWith("/admin/");
+    const underSecretDoor = pathname === SECRET_PREFIX || pathname.startsWith(`${SECRET_PREFIX}/`);
+
+    if (underLegacyDoor || underSecretDoor) {
+      if (!isAdmin) {
+        return notFound();
+      }
+      if (underLegacyDoor) {
+        const suffix = pathname.substring("/admin".length) || "/dashboard";
+        return NextResponse.redirect(new URL(`${SECRET_PREFIX}${suffix}`, request.url));
+      }
+      const target = new URL(request.url);
+      target.pathname = `/admin${pathname.substring(SECRET_PREFIX.length)}`;
+      return NextResponse.rewrite(target);
+    }
+  }
+
   if (isApiRoute) {
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -174,7 +202,8 @@ async function proxyRules(request: NextRequest) {
   if (session && isAuthPage) {
     const role = (session.user as { role: string })?.role;
     if (role === "ADMIN") {
-      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+      const adminHome = SECRET_ACTIVE ? `${SECRET_PREFIX}/dashboard` : "/admin/dashboard";
+      return NextResponse.redirect(new URL(adminHome, request.url));
     }
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
