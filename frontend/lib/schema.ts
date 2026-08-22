@@ -67,6 +67,19 @@ export const rateLimits = sqliteTable("RateLimit", {
   resetAt: integer("resetAt").notNull(),
 });
 
+export const siteTheme = sqliteTable("SiteTheme", {
+  id: integer("id").primaryKey().default(1),
+  background: text("background"),
+  foreground: text("foreground"),
+  cardBackground: text("cardBackground"),
+  border: text("border"),
+  primary: text("primary"),
+  accent: text("accent"),
+  radius: text("radius"),
+  fontFamily: text("fontFamily"),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()).$onUpdateFn(() => new Date()),
+});
+
 export const analyticsEvents = sqliteTable("AnalyticsEvent", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   event: text("event").notNull(),

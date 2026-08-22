@@ -33,6 +33,7 @@ describe("Sidebar", () => {
     expect(screen.getByText("Users")).toBeDefined();
     expect(screen.getByText("Subscriptions")).toBeDefined();
     expect(screen.getByText("Predictions")).toBeDefined();
+    expect(screen.getByText("Design")).toBeDefined();
     expect(screen.getByText("Settings")).toBeDefined();
   });
 
@@ -43,6 +44,7 @@ describe("Sidebar", () => {
     expect(screen.getByText("Users").closest("a")?.getAttribute("href")).toBe("/admin/users");
     expect(screen.getByText("Subscriptions").closest("a")?.getAttribute("href")).toBe("/admin/subscriptions");
     expect(screen.getByText("Predictions").closest("a")?.getAttribute("href")).toBe("/admin/predictions");
+    expect(screen.getByText("Design").closest("a")?.getAttribute("href")).toBe("/admin/design");
     expect(screen.getByText("Settings").closest("a")?.getAttribute("href")).toBe("/admin/settings");
   });
 
@@ -74,6 +76,6 @@ describe("Sidebar", () => {
     render(<Sidebar />);
     const navLinks = screen.getByRole("navigation", { name: "Admin navigation" });
     const svgs = navLinks.querySelectorAll("svg");
-    expect(svgs.length).toBe(6);
+    expect(svgs.length).toBe(7);
   });
 });
