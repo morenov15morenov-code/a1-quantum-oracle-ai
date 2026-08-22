@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
-const REQUIRED_CLICKS = 5;
+const REQUIRED_CLICKS = 6;
 const IDLE_RESET_MS = 3000;
 
 interface HiddenAdminTriggerProps {
@@ -32,10 +32,11 @@ export function HiddenAdminTrigger({ className }: HiddenAdminTriggerProps) {
         resetTimer.current = null;
       }
       clickCount.current = 0;
-      window.alert("Admin Access Unlocked");
-      if ((session?.user as { role?: string } | undefined)?.role === "ADMIN") {
-        window.location.href = "/admin/dashboard";
-      }
+      const role = (session?.user as { role?: string } | undefined)?.role;
+      window.location.href =
+        role === "ADMIN"
+          ? "/admin/dashboard"
+          : `/login?callbackUrl=${encodeURIComponent("/admin/dashboard")}`;
     }
   };
 

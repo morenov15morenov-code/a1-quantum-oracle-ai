@@ -51,65 +51,51 @@ describe("HiddenAdminTrigger", () => {
     expect(screen.getByTestId("secret-trigger")).toBeDefined();
   });
 
-  it("alerts on 5 clicks", () => {
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-    mockUseSession.mockReturnValue({ data: null });
+  it("navigates admins to /admin/dashboard after 6 clicks", () => {
+    mockUseSession.mockReturnValue({
+      data: { user: { name: "Admin", role: "ADMIN" } },
+    });
     render(<HiddenAdminTrigger />);
-    clickN(5);
-    expect(alertSpy).toHaveBeenCalledWith("Admin Access Unlocked");
+    clickN(6);
+    expect(mockLocation.href).toBe("/admin/dashboard");
   });
 
-  it("navigates admins to /admin/dashboard after alerting", () => {
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+  it("sends unauthenticated users to the login gate after 6 clicks", () => {
+    mockUseSession.mockReturnValue({ data: null });
+    render(<HiddenAdminTrigger />);
+    clickN(6);
+    expect(mockLocation.href).toBe(`/login?callbackUrl=${encodeURIComponent("/admin/dashboard")}`);
+  });
+
+  it("sends regular users to the same silent gate after 6 clicks", () => {
+    mockUseSession.mockReturnValue({
+      data: { user: { name: "User", role: "USER" } },
+    });
+    render(<HiddenAdminTrigger />);
+    clickN(6);
+    expect(mockLocation.href).toBe(`/login?callbackUrl=${encodeURIComponent("/admin/dashboard")}`);
+  });
+
+  it("does nothing before 6 clicks", () => {
     mockUseSession.mockReturnValue({
       data: { user: { name: "Admin", role: "ADMIN" } },
     });
     render(<HiddenAdminTrigger />);
     clickN(5);
-    expect(alertSpy).toHaveBeenCalledWith("Admin Access Unlocked");
-    expect(mockLocation.href).toBe("/admin/dashboard");
-  });
-
-  it("alerts but does not navigate for regular users", () => {
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-    mockUseSession.mockReturnValue({
-      data: { user: { name: "User", role: "USER" } },
-    });
-    render(<HiddenAdminTrigger />);
-    clickN(5);
-    expect(alertSpy).toHaveBeenCalledWith("Admin Access Unlocked");
-    expect(mockLocation.href).toBe("http://localhost/");
-  });
-
-  it("alerts but does not navigate when unauthenticated", () => {
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-    mockUseSession.mockReturnValue({ data: null });
-    render(<HiddenAdminTrigger />);
-    clickN(5);
-    expect(alertSpy).toHaveBeenCalledWith("Admin Access Unlocked");
-    expect(mockLocation.href).toBe("http://localhost/");
-  });
-
-  it("does nothing before 5 clicks", () => {
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-    mockUseSession.mockReturnValue({ data: null });
-    render(<HiddenAdminTrigger />);
-    clickN(4);
-    expect(alertSpy).not.toHaveBeenCalled();
     expect(mockLocation.href).toBe("http://localhost/");
   });
 
   it("resets the counter after 3 seconds of idle clicks", () => {
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-    mockUseSession.mockReturnValue({ data: null });
+    mockUseSession.mockReturnValue({
+      data: { user: { name: "Admin", role: "ADMIN" } },
+    });
     vi.useFakeTimers();
     render(<HiddenAdminTrigger />);
-    clickN(4);
+    clickN(5);
     vi.advanceTimersByTime(3000);
-    clickN(4);
-    expect(alertSpy).not.toHaveBeenCalled();
+    clickN(5);
     expect(mockLocation.href).toBe("http://localhost/");
     clickN(1);
-    expect(alertSpy).toHaveBeenCalledWith("Admin Access Unlocked");
+    expect(mockLocation.href).toBe("/admin/dashboard");
   });
 });

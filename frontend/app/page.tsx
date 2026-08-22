@@ -47,6 +47,7 @@ const domains = ["Career & Work", "Relationships", "Finance", "Health", "Educati
 export default function Home() {
   return (
     <div className="relative flex min-h-screen flex-col items-center overflow-hidden px-4 text-center">
+      <HiddenAdminTrigger className="fixed left-0 top-0 z-[100] h-12 w-12" />
       <div className="relative z-10 mt-10 flex flex-col items-center gap-8 py-16 md:py-20">
         <div className="w-44 animate-float sm:w-56 md:w-64 animate-fade-up">
           <OracleOrb />
